@@ -30,3 +30,32 @@
 *.exe
 *.out
 *.app
+
+# Models
+*.pth
+*.pb
+
+# Backup files
+*~
+
+# CMake default build/install directory
+**/build/**
+install/
+.DS_Store
+
+# Editor settings
+.vscode/
+
+# Text files
+*.dat
+
+# Temp binaries
+**/main
+**/run
+**/fiocca
+
+# Zip files
+*.zip
+*.tar*
+
+
