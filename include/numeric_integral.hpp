@@ -42,8 +42,7 @@ template<
 #endif
 auto trapezoid(Integrand&& integrand,
                DataType min, DataType max,
-               size_t ngrid = 1e+6)
-  -> DataType {
+               size_t ngrid = 1e+6) {
   DataType sum = 0; 
   DataType delta = (max - min) / ngrid;
   for (size_t i = 0; i != ngrid; ++i)
@@ -75,8 +74,7 @@ template<
 #endif
 auto simpson(Integrand&& integrand,
              DataType min, DataType max,
-             size_t ngrid = 1e+6)
-  -> DataType {
+             size_t ngrid = 1e+6) {
   DataType sum = 0;
   DataType delta = (max - min) / ngrid;
   for (size_t i = 1; i != ngrid; ++i)
@@ -113,8 +111,7 @@ template<
 auto romberg(Integrand&& integrand,
              DataType min, DataType max,
              DataType accuracy = (DataType)1e-11,
-             size_t max_steps = 1e+2)
-  -> DataType {
+             size_t max_steps = 1e+2) {
   // Buffers for initialization of romberg series.
   std::vector<DataType> pre_row(max_steps), cur_row(max_steps);
   DataType h = max - min;
@@ -140,7 +137,7 @@ auto romberg(Integrand&& integrand,
     // Return the result if the accuracy is qualified.
     if (i > 1 && std::fabs(pre_row[i - 1] - cur_row[i]) < accuracy)
       return cur_row[i - 1];
-        
+
     // Swap previous and current rows as we only need the last row.
     // Note that this is an O(1) operation.
     std::swap(pre_row, cur_row);
