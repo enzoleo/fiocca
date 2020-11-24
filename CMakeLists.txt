@@ -11,19 +11,32 @@ set(FIOCCA_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 # Note that OpenCV is not required in our framework. If OpenCV package is
 # successfully found, a preprocess macro named FIOCCA_OPENCV_AVAILABLE_ will
 # be defined and thus you can program accordingly.
-find_package(OpenCV)
+find_package(OpenCV QUIET)
 if (OpenCV_FOUND)
   add_compile_definitions(FIOCCA_OPENCV_AVAILABLE_)
 endif()
+
+# Find OpenMP. If OpenMP is enabled, we optimize some for loops in a simple
+# way with OpenMP parallel.
+find_package(OpenMP QUIET)
+if (OpenCV_FOUND)
+  add_compile_definitions(FIOCCA_OPENMP_AVAILABLE_)
+endif()
+
+# Include required headers.
 include_directories(${FIOCCA_INCLUDE_DIR})
 
 # Specify all cpp files in the source directory as sources for convenience.
 file(GLOB_RECURSE FIOCCA_SRCS src/*.cpp)
-
 add_library(fiocca SHARED ${FIOCCA_SRCS})
 if (OpenCV_FOUND)
   include_directories(${OpenCV_INCLUDE_DIRS})
   target_link_libraries(fiocca ${OpenCV_LIBRARIES})
+endif()
+
+# If the compiler supports OpenMP, Import OpenMP modules for CXX.
+if (OpenMP_FOUND)
+  target_link_libraries(fiocca OpenMP::OpenMP_CXX)
 endif()
 
 # Example build flags that defaults to be opened.

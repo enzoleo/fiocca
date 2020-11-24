@@ -1,5 +1,5 @@
-#ifndef RECT_HPP_
-#define RECT_HPP_
+#ifndef FIOCCA_RECT_HPP_
+#define FIOCCA_RECT_HPP_
 
 #include <iostream>
 #include <iomanip>
@@ -59,4 +59,4 @@ protected:
 
 } // namespace fiocca
 
-#endif // RECT_HPP_
+#endif // FIOCCA_RECT_HPP_

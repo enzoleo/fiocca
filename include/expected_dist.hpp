@@ -1,11 +1,21 @@
-#ifndef EXPECTED_DIST_HPP_
-#define EXPECTED_DIST_HPP_
+#ifndef FIOCCA_EXPECTED_DIST_HPP_
+#define FIOCCA_EXPECTED_DIST_HPP_
 
 #include "rect.hpp"
 #include "numeric_integral.hpp"
 
 namespace fiocca {
 
+/**
+ * @brief Calculate the expected distance between two rectangles. The
+ *  return type is deduced by the compiler.
+ * @tparam DataType the datatype of coordinates. It MUST be floating
+ *  types to enable computation. However, the constraint will be set
+ *  in implementations instead.
+ * @param lhs the lefthand side rectangle.
+ * @param rhs the righthand side rectangle.
+ * @return Floating (should be @DataType) representing distance.
+ */
 template<class DataType>
 auto expected_dist(const Rect<DataType>& lhs, const Rect<DataType>& rhs);
 
@@ -14,7 +24,16 @@ auto expected_dist(const Rect<DataType>& lhs, const Rect<DataType>& rhs);
  * The constructors are declared private so it is invisible outside class.
  * Only friend function is allowed to access it, for distance calculation.
  */
+#ifdef __cpp_concepts
 template<class DataType = double>
+requires Floating<DataType>
+#else
+template<
+  class DataType = double,
+  typename Enable = std::enable_if_t<
+    std::is_floating_point<DataType>::value>
+  >
+#endif
 class TwinRect {
 public:
   /**
@@ -22,7 +41,7 @@ public:
    *  randomly selected from the two rectangles. Specifically, it calculates
    *  a tedious integral:
    *      I = \int_{(x1, y1) \in [a, b]} \int_{(x2, y2) \in [c, d]}
-   *          \sqrt{(x1 - x2) ^ 2 + (y1 - y2) ^ 2}
+   *            \sqrt{(x1 - x2) ^ 2 + (y1 - y2) ^ 2}
    *          d[x1] d[x2] d[y1] d[y2]
    * Monte-Carlo approach is feasible, however, much more imprecise. Numeric
    * integrals are also feasible that is capable of attaining a good
@@ -34,7 +53,7 @@ public:
     // [CASE 1] the two rectangles both have positive width.
     // Call the most complicated integral calculator.
     // They are allowed to degraded into horizontal lines.
-    if (rect1.w() && rect2.w())
+    if (rect1_.w() && rect2_.w())
       result = _int_xdens(coord0[0], coord0[1])
              - _int_xdens(coord0[2], coord0[3])
              + _int_dens(coord0[1], coord0[2]) * (coord0[1] - coord0[0])
@@ -42,14 +61,12 @@ public:
              + _int_dens(coord0[2], coord0[3]) * coord0[3];
     // [CASE 2] the two rectangles are both degraded to vertical lines.
     // They are allowed to be a point.
-    else if (!rect1.w() && !rect2.w())
+    else if (!rect1_.w() && !rect2_.w())
       result = dens(delta1);
     else // [CASE 3] verticle line to rectangle/horizontal line.
       result = _int_dens(coord0[0], coord0[3]);
     return result / factor;
   }
-
-  //Integral integral;
 
   // Friend function declaration.
   // Note that the constructor of this class are delacred private.
@@ -58,23 +75,25 @@ public:
 
 private:
   /* Constructors */
-  TwinRect(const Rect<DataType>& _rectP, const Rect<DataType>& _rectQ)
-      : rect1(_rectP), rect2(_rectQ) {
-    auto [ a, b ] = rect1.shape();
-    auto [ c, d ] = rect2.shape();
-    delta1 = rect2.x1() - rect1.x1();
-    delta2 = rect2.y1() - rect1.y1();
-    factor = (a? a : 1) * (b? b : 1) * (c? c : 1) * (d? d : 1);
+  TwinRect(const Rect<DataType>& rect1, const Rect<DataType>& rect2)
+      : rect1_(rect1), rect2_(rect2) {
+    auto [ w1, h1 ] = rect1_.shape();
+    auto [ w2, h2 ] = rect2_.shape();
+    delta1 = rect2_.x1() - rect1_.x1();
+    delta2 = rect2_.y1() - rect1_.y1();
+    factor = (w1? w1 : 1) * (h1? h1 : 1) * (w2? w2 : 1) * (h2? h2 : 1);
 
-    coord0[0] = delta1 - a;
-    coord0[1] = delta1 + std::min(0., c - a);
-    coord0[2] = delta1 + std::max(0., c - a);
-    coord0[3] = c + delta1;
+    //auto [ lb1, ub1 ] = std::make_std::min(0., w2 - w1), std::max(0., w2 - w1) };
+
+    coord0[0] = delta1 - w1;
+    coord0[1] = delta1 + std::min(0., w2 - w1);
+    coord0[2] = delta1 + std::max(0., w2 - w1);
+    coord0[3] = delta1 + w2;
         
-    coord1[0] = delta2 - b;
-    coord1[1] = delta2 + std::min(0., d - b);
-    coord1[2] = delta2 + std::max(0., d - b);
-    coord1[3] = d + delta2;
+    coord1 = {
+      delta2 - h1, delta2 + std::min(0., h2 - h1),
+      delta2 + std::max(0., h2 - h1), delta2 + h2
+    };
   }
 
   static auto f(DataType p, DataType q, DataType x) -> DataType {
@@ -94,13 +113,13 @@ private:
   }
 
   auto dens(DataType x) const -> DataType {
-    if (rect1.h() && rect2.h())
+    if (rect1_.h() && rect2_.h())
       return f(coord1[0], coord1[1], x)
            - f(coord1[2], coord1[3], x)
            - g(coord1[0], coord1[1], x) * coord1[0]
            + g(coord1[1], coord1[2], x) * (coord1[1] - coord1[0])
            + g(coord1[2], coord1[3], x) * coord1[3];
-    else if (!rect1.h() && !rect2.h())
+    else if (!rect1_.h() && !rect2_.h())
       return std::sqrt(x * x + delta2 * delta2);
     return g(coord1[0], coord1[3], x);
   }
@@ -165,31 +184,31 @@ private:
   }
 
   DataType _int_dens(DataType lower, DataType upper) {
-    if (rect1.h() && rect2.h())
+    if (rect1_.h() && rect2_.h())
       return _int_f(coord1[0], coord1[1], lower, upper)
            - _int_f(coord1[2], coord1[3], lower, upper)
            - _int_g(coord1[0], coord1[1], lower, upper) * coord1[0]
            + _int_g(coord1[1], coord1[2], lower, upper) * (coord1[1] - coord1[0])
            + _int_g(coord1[2], coord1[3], lower, upper) * coord1[3];
-    else if (!rect1.h() && !rect2.h())
+    else if (!rect1_.h() && !rect2_.h())
       return g(lower, upper, delta2);    
     return _int_g(coord1[0], coord1[3], lower, upper);
   }
 
   DataType _int_xdens(DataType lower, DataType upper) {
-    if (rect1.h() && rect2.h())
+    if (rect1_.h() && rect2_.h())
       return _int_xf(coord1[0], coord1[1], lower, upper)
            - _int_xf(coord1[2], coord1[3], lower, upper)
            - _int_xg(coord1[0], coord1[1], lower, upper) * coord1[0]
            + _int_xg(coord1[1], coord1[2], lower, upper) * (coord1[1] - coord1[0])
            + _int_xg(coord1[2], coord1[3], lower, upper) * coord1[3];
-    else if (!rect1.h() && !rect2.h())
+    else if (!rect1_.h() && !rect2_.h())
       return f(lower, upper, delta2);    
     return _int_xg(coord1[0], coord1[3], lower, upper);
   }
   
   /* Two rectangles */
-  Rect<DataType> rect1, rect2;
+  Rect<DataType> rect1_, rect2_;
   
   /* Position information */
   DataType delta1, delta2;
@@ -202,12 +221,13 @@ private:
 
 };
 
+// Implementation of distance calculator.
 template<class DataType>
 auto expected_dist(const Rect<DataType>& lhs, const Rect<DataType>& rhs) {
-  TwinRect double_rect(lhs, rhs);
-  return double_rect.dist();
+  TwinRect twin_rect(lhs, rhs);
+  return twin_rect.dist();
 }
 
 } // namespace fiocca
 
-#endif // EXPECTED_DIST_HPP_
+#endif // FIOCCA_EXPECTED_DIST_HPP_

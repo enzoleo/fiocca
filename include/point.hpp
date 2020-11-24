@@ -1,6 +1,6 @@
 
-#ifndef POINT_HPP_
-#define POINT_HPP_
+#ifndef FIOCCA_POINT_HPP_
+#define FIOCCA_POINT_HPP_
 
 #include <cmath>
 #include <array>
@@ -59,4 +59,4 @@ using Point2d = Point<double>;
 
 } // namespace fiocca
 
-#endif // POINT_HPP
+#endif // FIOCCA_POINT_HPP

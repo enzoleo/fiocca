@@ -1,17 +1,15 @@
-#ifndef NUMERIC_INTEGRAL_HPP_
-#define NUMERIC_INTEGRAL_HPP_
+#ifndef FIOCCA_NUMERIC_INTEGRAL_HPP_
+#define FIOCCA_NUMERIC_INTEGRAL_HPP_
 
-#include <type_traits>
 #include <iostream>
 #include <vector>
+#include "utility.hpp"
 
 namespace fiocca {
 
 namespace integral {
 
 #ifdef __cpp_concepts
-template<typename T>
-concept Floating = std::is_floating_point<T>::value;
 template<typename T, typename ValueType>
 concept Integrable = Floating<ValueType> && requires(T f, ValueType x) {
   { f(x) } -> Floating;
@@ -40,11 +38,12 @@ template<
     std::is_invocable_r<DataType, Integrand, DataType>::value>
   >
 #endif
-auto trapezoid(Integrand&& integrand,
-               DataType min, DataType max,
-               size_t ngrid = 1e+6) {
+constexpr auto trapezoid(Integrand&& integrand,
+                         DataType min, DataType max,
+                         size_t ngrid = 1e+6) {
   DataType sum = 0; 
   DataType delta = (max - min) / ngrid;
+#pragma omp parallel for reduction (+:sum)
   for (size_t i = 0; i != ngrid; ++i)
     sum += integrand(min + i * delta) * delta;
   return sum;
@@ -72,11 +71,12 @@ template<
     std::is_invocable_r<DataType, Integrand, DataType>::value>
   >
 #endif
-auto simpson(Integrand&& integrand,
-             DataType min, DataType max,
-             size_t ngrid = 1e+6) {
+constexpr auto simpson(Integrand&& integrand,
+                       DataType min, DataType max,
+                       size_t ngrid = 1e+6) {
   DataType sum = 0;
   DataType delta = (max - min) / ngrid;
+#pragma omp parallel for reduction (+:sum)
   for (size_t i = 1; i != ngrid; ++i)
     if (i & 1) sum += 4 * integrand(min + i * delta);
     else       sum += 2 * integrand(min + i * delta);       
@@ -149,4 +149,4 @@ auto romberg(Integrand&& integrand,
 
 } // namespace fiocca
 
-#endif // NUMERIC_INTEGRAL_HPP_
+#endif // FIOCCA_NUMERIC_INTEGRAL_HPP_
