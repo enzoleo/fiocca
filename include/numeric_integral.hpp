@@ -36,7 +36,8 @@ requires Integrable<Integrand, DataType>
 template<
   class DataType, class Integrand,
   typename Enable = std::enable_if_t<
-    std::is_floating_point<DataType>::value>
+    std::is_floating_point<DataType>::value &&
+    std::is_invocable_r<DataType, Integrand, DataType>::value>
   >
 #endif
 auto trapezoid(Integrand&& integrand,
@@ -68,7 +69,8 @@ requires Integrable<Integrand, DataType>
 template<
   class DataType, class Integrand,
   typename Enable = std::enable_if_t<
-    std::is_floating_point<DataType>::value>
+    std::is_floating_point<DataType>::value &&
+    std::is_invocable_r<DataType, Integrand, DataType>::value>
   >
 #endif
 auto simpson(Integrand&& integrand,
@@ -104,7 +106,8 @@ requires Integrable<Integrand, DataType>
 template<
   class DataType, class Integrand,
   typename Enable = std::enable_if_t<
-    std::is_floating_point<DataType>::value>
+    std::is_floating_point<DataType>::value &&
+    std::is_invocable_r<DataType, Integrand, DataType>::value>
   >
 #endif
 auto romberg(Integrand&& integrand,

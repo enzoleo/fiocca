@@ -1,8 +1,8 @@
-#include <iostream>
-#include <iomanip>
-#include <cmath>
-#include "numeric_integral.hpp"
+#ifndef EXPECTED_DIST_HPP_
+#define EXPECTED_DIST_HPP_
+
 #include "rect.hpp"
+#include "numeric_integral.hpp"
 
 namespace fiocca {
 
@@ -36,13 +36,13 @@ public:
    */
   auto dist() -> double {
     double result = 0;
-    if (a && c)
+    if (rectP.w() && rectQ.w())
       result = _int_xdens(coord0[0], coord0[1])
           - _int_xdens(coord0[2], coord0[3])
           + _int_dens(coord0[1], coord0[2]) * (coord0[1] - coord0[0])
           - _int_dens(coord0[0], coord0[1]) * coord0[0]
           + _int_dens(coord0[2], coord0[3]) * coord0[3];
-    else if (!a && !c)
+    else if (!rectP.w() && !rectQ.w())
       result = dens(delta1);
     else
       result = _int_dens(coord0[0], coord0[3]);
@@ -72,13 +72,13 @@ private:
   }
 
   double dens(double x) {
-    if (b && d)
+    if (rectP.h() && rectQ.h())
       return f(coord1[0], coord1[1], x)
           - f(coord1[2], coord1[3], x)
           - g(coord1[0], coord1[1], x) * coord1[0]
           + g(coord1[1], coord1[2], x) * (coord1[1] - coord1[0])
           + g(coord1[2], coord1[3], x) * coord1[3];
-    else if (!b && !d)
+    else if (!rectP.h() && !rectQ.h())
       return std::sqrt(x * x + delta2 * delta2);
     return g(coord1[0], coord1[3], x);
   }
@@ -144,25 +144,25 @@ private:
   }
 
   double _int_dens(double lower, double upper) {
-    if (b && d)
+    if (rectP.h() && rectQ.h())
       return _int_f(coord1[0], coord1[1], lower, upper)
           - _int_f(coord1[2], coord1[3], lower, upper)
           - _int_g(coord1[0], coord1[1], lower, upper) * coord1[0]
           + _int_g(coord1[1], coord1[2], lower, upper) * (coord1[1] - coord1[0])
           + _int_g(coord1[2], coord1[3], lower, upper) * coord1[3];
-    else if (!b && !d)
+    else if (!rectP.h() && !rectQ.h())
       return g(lower, upper, delta2);    
     return _int_g(coord1[0], coord1[3], lower, upper);
   }
 
   double _int_xdens(double lower, double upper) {
-    if (b && d)
+    if (rectP.h() && rectQ.h())
       return _int_xf(coord1[0], coord1[1], lower, upper)
           - _int_xf(coord1[2], coord1[3], lower, upper)
           - _int_xg(coord1[0], coord1[1], lower, upper) * coord1[0]
           + _int_xg(coord1[1], coord1[2], lower, upper) * (coord1[1] - coord1[0])
           + _int_xg(coord1[2], coord1[3], lower, upper) * coord1[3];
-    else if (!b && !d)
+    else if (!rectP.h() && !rectQ.h())
       return f(lower, upper, delta2);    
     return _int_xg(coord1[0], coord1[3], lower, upper);
   }
@@ -183,19 +183,4 @@ private:
 
 } // namespace fiocca
 
-int main()
-{
-  int repeat;
-  std::cin >> repeat;
-  std::cout << std::fixed << std::setprecision(14);
-  for (int i = 0; i < repeat; ++i) {
-    double x1, x2, x3, x4, y1, y2, y3, y4;
-    std::cin >> x1 >> x2 >> y1 >> y2 >> x3 >> x4 >> y3 >> y4;
-    fiocca::Rect<double> rect1(x1, y1, x2, y2);
-    fiocca::Rect<double> rect2(x3, y3, x4, y4);
-    fiocca::DoubleRect dr(rect1, rect2);
-    std::cout << dr.dist() << std::endl;
-  }
-
-  return 0;
-}
+#endif // EXPECTED_DIST_HPP_
