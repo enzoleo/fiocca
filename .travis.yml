@@ -1,0 +1,18 @@
+language: cpp
+dist: focal
+branches:
+  only:
+    - master
+compiler: g++
+os:
+  - linux
+before_install:
+  - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
+  - sudo apt-get update -qq
+install:
+  - sudo apt-get install -qq build-essential cmake
+script:
+  - mkdir build
+  - cd build
+  - cmake .. -DFIOCCA_BUILD_EXAMPLES=ON
+  - make
