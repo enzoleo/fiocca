@@ -74,7 +74,7 @@ public:
                               const Rect<DataType>& rhs);
 
 private:
-  /* Constructors */
+  // Default PRIVATE constructor with two rectangles.
   TwinRect(const Rect<DataType>& rect1, const Rect<DataType>& rect2)
       : rect1_(rect1), rect2_(rect2) {
     auto [ w1, h1 ] = rect1_.shape();
@@ -83,17 +83,11 @@ private:
     delta2 = rect2_.y1() - rect1_.y1();
     factor = (w1? w1 : 1) * (h1? h1 : 1) * (w2? w2 : 1) * (h2? h2 : 1);
 
-    //auto [ lb1, ub1 ] = std::make_std::min(0., w2 - w1), std::max(0., w2 - w1) };
-
-    coord0[0] = delta1 - w1;
-    coord0[1] = delta1 + std::min(0., w2 - w1);
-    coord0[2] = delta1 + std::max(0., w2 - w1);
-    coord0[3] = delta1 + w2;
-        
-    coord1 = {
-      delta2 - h1, delta2 + std::min(0., h2 - h1),
-      delta2 + std::max(0., h2 - h1), delta2 + h2
-    };
+    // Structured binding and reassignment.
+    auto [ lb1, ub1 ] = std::minmax({ 0., w2 - w1 });
+    auto [ lb2, ub2 ] = std::minmax({ 0., h2 - h1 });
+    coord0 = { delta1 - w1, delta1 + lb1, delta1 + ub1, delta1 + w2 };
+    coord1 = { delta2 - h1, delta2 + lb2, delta2 + ub2, delta2 + h2 };
   }
 
   static auto f(DataType p, DataType q, DataType x) -> DataType {
@@ -126,8 +120,7 @@ private:
 
   static auto _idfint_f(DataType p, DataType q, DataType x) -> DataType {
     DataType psq = p * p, qsq = q * q, xsq = x * x;
-    DataType prt = std::sqrt(psq + xsq);
-    DataType qrt = std::sqrt(qsq + xsq);
+    DataType prt = std::sqrt(psq + xsq), qrt = std::sqrt(qsq + xsq);
     DataType result;
     result = x * (2 * xsq + 5 * qsq) * qrt
            - x * (2 * xsq + 5 * psq) * prt
@@ -138,21 +131,19 @@ private:
 
   static auto _idfint_g(DataType p, DataType q, DataType x) -> DataType {
     DataType psq = p * p, qsq = q * q, xsq = x * x;
-    DataType prt = std::sqrt(psq + xsq);
-    DataType qrt = std::sqrt(qsq + xsq);
+    DataType prt = std::sqrt(psq + xsq), qrt = std::sqrt(qsq + xsq);
     DataType result;
     result = 2. * x * (q * qrt - p * prt)
-        + (q? q * qsq * std::log(x + qrt) : 0)
-        - (p? p * psq * std::log(x + prt) : 0)
-        + (x? x * xsq * std::log((q + qrt) / (p + prt)) : 0);
+           + (q? q * qsq * std::log(x + qrt) : 0)
+           - (p? p * psq * std::log(x + prt) : 0)
+           + (x? x * xsq * std::log((q + qrt) / (p + prt)) : 0);
     return result / 6.;
   }
 
   static auto _idfint_xf(DataType p, DataType q, DataType x) -> DataType {
-    DataType qsqsum = q * q + x * x;
-    DataType pspsum = p * p + x * x;
+    DataType pspsum = p * p + x * x, qsqsum = q * q + x * x;
     DataType result = qsqsum * qsqsum * std::sqrt(qsqsum)
-                  - pspsum * pspsum * std::sqrt(pspsum);
+                    - pspsum * pspsum * std::sqrt(pspsum);
     return result / 15.;
   }
 
@@ -162,8 +153,8 @@ private:
     DataType qrt = std::sqrt(qsq + xsq);
     DataType result;
     result = 2. * q * (5 * xsq + 2 * qsq) * qrt
-        - 2. * p * (5 * xsq + 2 * psq) * prt
-        + 6. * (x? xsq * xsq * std::log((q + qrt) / (p + prt)) : 0);
+           - 2. * p * (5 * xsq + 2 * psq) * prt
+           + 6. * (x? xsq * xsq * std::log((q + qrt) / (p + prt)) : 0);
     return result / 48.;
   }
 
@@ -207,16 +198,16 @@ private:
     return _int_xg(coord1[0], coord1[3], lower, upper);
   }
   
-  /* Two rectangles */
+  // Two rectangles.
   Rect<DataType> rect1_, rect2_;
   
-  /* Position information */
+  // Position information.
   DataType delta1, delta2;
 
-  /* Area information */
+  // Area information.
   DataType factor;
 
-  /* Image information */
+  // Image information.
   std::array<DataType, 4> coord0, coord1;
 
 };

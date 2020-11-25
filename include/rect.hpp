@@ -37,9 +37,12 @@ public:
   constexpr auto y1() const { return p1.y; }
   constexpr auto y2() const { return p2.y; }
   
-  // Bottom left point and top right point
+  // Four corner points. Note that accessors of bottom left and top
+  // right points return const references.
   constexpr const auto& bl() const { return p1; }
   constexpr const auto& tr() const { return p2; }
+  constexpr auto br() const { return Point<DataType> { p2.x, p1.y }; }
+  constexpr auto tl() const { return Point<DataType> { p1.x, p2.y }; }
 
   // Shape calculators.
   constexpr auto w() const { return p2.x - p1.x; }
