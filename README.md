@@ -1,4 +1,8 @@
 # fiocca
+![Build Status](https://travis-ci.org/enzoleo/fiocca.svg?branch=master)
+![License](https://img.shields.io/github/license/enzoleo/fiocca?color=blue)
+![Repo Size](https://img.shields.io/github/repo-size/enzoleo/fiocca)
+
 Fundamental implementations of some computational algorithms in plane geometry. It does not contain too complicated properties or theorems. However, I will upload some interesting problems (*in my own view*), that might be a little bit tedious and difficult to comprehend, to this repository :)
 
 ## Build
