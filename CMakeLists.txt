@@ -19,7 +19,7 @@ endif()
 # Find OpenMP. If OpenMP is enabled, we optimize some for loops in a simple
 # way with OpenMP parallel.
 find_package(OpenMP QUIET)
-if (OpenCV_FOUND)
+if (OpenMP_FOUND)
   add_compile_definitions(FIOCCA_OPENMP_AVAILABLE_)
 endif()
 

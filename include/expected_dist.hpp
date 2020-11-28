@@ -92,9 +92,8 @@ private:
 
   static auto f(DataType p, DataType q, DataType x) -> DataType {
     DataType xsq = x * x;
-    DataType psqsum = p * p + xsq, qsqsum = q * q + xsq;
-    DataType result = qsqsum * std::sqrt(qsqsum)
-                  - psqsum * std::sqrt(psqsum);
+    DataType psqs = p * p + xsq, qsqs = q * q + xsq;
+    DataType result = qsqs * std::sqrt(qsqs) - psqs * std::sqrt(psqs);
     return result / 3.;
   }
     
@@ -133,17 +132,23 @@ private:
     DataType psq = p * p, qsq = q * q, xsq = x * x;
     DataType prt = std::sqrt(psq + xsq), qrt = std::sqrt(qsq + xsq);
     DataType result;
+    //DataType tmp = almost_zero(xsq)? 
     result = 2. * x * (q * qrt - p * prt)
            + (q? q * qsq * std::log(x + qrt) : 0)
            - (p? p * psq * std::log(x + prt) : 0)
            + (x? x * xsq * std::log((q + qrt) / (p + prt)) : 0);
+#if 1
+    if (x && almost_zero(xsq)) {
+      std::cout << result << " " << prt << std::endl;
+    }
+#endif
     return result / 6.;
   }
 
   static auto _idfint_xf(DataType p, DataType q, DataType x) -> DataType {
-    DataType pspsum = p * p + x * x, qsqsum = q * q + x * x;
-    DataType result = qsqsum * qsqsum * std::sqrt(qsqsum)
-                    - pspsum * pspsum * std::sqrt(pspsum);
+    DataType psps = p * p + x * x, qsqs = q * q + x * x;
+    DataType result = qsqs * qsqs * std::sqrt(qsqs)
+                    - psps * psps * std::sqrt(psps);
     return result / 15.;
   }
 
@@ -194,7 +199,7 @@ private:
            + _int_xg(coord1[1], coord1[2], lower, upper) * (coord1[1] - coord1[0])
            + _int_xg(coord1[2], coord1[3], lower, upper) * coord1[3];
     else if (!rect1_.h() && !rect2_.h())
-      return f(lower, upper, delta2);    
+      return f(lower, upper, delta2);
     return _int_xg(coord1[0], coord1[3], lower, upper);
   }
   

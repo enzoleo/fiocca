@@ -17,9 +17,9 @@ class Rect {
 public:
   // Default constructor with no argument/four coordinates.
   constexpr Rect() : p1({ 0, 0 }), p2({0, 0}) { }
-  constexpr Rect(DataType _x1, DataType _x2, DataType _y1, DataType _y2)
-      : p1({ std::min(_x1, _x2), std::max(_x1, _x2) }),
-        p2({ std::min(_y1, _y2), std::max(_y1, _y2) }) {
+  constexpr Rect(DataType x1_, DataType x2_, DataType y1_, DataType y2_)
+      : p1({ std::min(x1_, x2_), std::max(x1_, x2_) }),
+        p2({ std::min(y1_, y2_), std::max(y1_, y2_) }) {
     // To simplify the calculation process and avoid mistakes,
     // here we need to make sure x1 <= x2 and y1 <= y2.
   }
@@ -27,8 +27,8 @@ public:
   // Construct rectangle from bottom left and top right points.
   constexpr Rect(const Point<DataType>& p1_, const Point<DataType>& p2_) {
     // Check range of input. Swap coordinates if illegal.
-    p1 = { std::min(p1.x, p2.x), std::min(p1.y, p2.y) };
-    p2 = { std::max(p1.x, p2.x), std::max(p1.y, p2.y) };
+    p1 = { std::min(p1_.x, p2.x), std::min(p1_.y, p2_.y) };
+    p2 = { std::max(p1_.x, p2.x), std::max(p1_.y, p2_.y) };
   }
 
   // Attribute accessors/mutators.
@@ -49,6 +49,16 @@ public:
   constexpr auto h() const { return p2.y - p1.y; }
   constexpr auto shape() const {
     return std::make_pair(p2.x - p1.x, p2.y - p1.y);
+  }
+
+  // Other geometric attributes.
+  constexpr auto area() const { return w() * h(); }
+  constexpr auto peri() const { return 2 * (w() + h()); }
+  auto diam() const { return std::hypot(w(), h()); }
+
+  // Whether a point is inside the rectangle.
+  constexpr auto contain(Point<DataType>& p) const {
+    return dominate(p, p1) && dominate(p2, p);
   }
 
 protected:
