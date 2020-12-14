@@ -16,7 +16,7 @@ template<class DataType>
 class Rect {
 public:
   // Default constructor with no argument/four coordinates.
-  constexpr Rect() : p1({ 0, 0 }), p2({0, 0}) { }
+  constexpr Rect() : p1({ 0, 0 }), p2({ 0, 0 }) { }
   constexpr Rect(DataType x1_, DataType x2_, DataType y1_, DataType y2_)
       : p1({ std::min(x1_, x2_), std::max(x1_, x2_) }),
         p2({ std::min(y1_, y2_), std::max(y1_, y2_) }) {

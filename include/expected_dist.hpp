@@ -75,7 +75,7 @@ public:
 
 private:
   // Default PRIVATE constructor with two rectangles.
-  TwinRect(const Rect<DataType>& rect1, const Rect<DataType>& rect2)
+  constexpr TwinRect(const Rect<DataType>& rect1, const Rect<DataType>& rect2)
       : rect1_(rect1), rect2_(rect2) {
     auto [ w1, h1 ] = rect1_.shape();
     auto [ w2, h2 ] = rect2_.shape();
@@ -102,6 +102,11 @@ private:
     DataType prt = std::sqrt(psq + xsq), qrt = std::sqrt(qsq + xsq);
     DataType result = q * qrt - p * prt
         + (x? xsq * std::log((q + qrt) / (p + prt)) : 0) / 2.;
+#if 1
+    if (x && almost_zero(xsq)) {
+      std::cout << result << " " << prt << std::endl;
+    }
+#endif
     return result / 2.;
   }
 
@@ -132,16 +137,10 @@ private:
     DataType psq = p * p, qsq = q * q, xsq = x * x;
     DataType prt = std::sqrt(psq + xsq), qrt = std::sqrt(qsq + xsq);
     DataType result;
-    //DataType tmp = almost_zero(xsq)? 
     result = 2. * x * (q * qrt - p * prt)
            + (q? q * qsq * std::log(x + qrt) : 0)
            - (p? p * psq * std::log(x + prt) : 0)
            + (x? x * xsq * std::log((q + qrt) / (p + prt)) : 0);
-#if 1
-    if (x && almost_zero(xsq)) {
-      std::cout << result << " " << prt << std::endl;
-    }
-#endif
     return result / 6.;
   }
 
