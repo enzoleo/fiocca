@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <cmath>
 #include <chrono>
+#include <array>
 #include "rect.hpp"
 #include "expected_dist.hpp"
 
@@ -25,5 +26,6 @@ auto main() -> int {
   fiocca::Rect rect(0.2, 0.3, 5.6, 5.8);
   fiocca::Point2d p { 2.2, 6.3 };
   std::cout << rect.contain(p) << std::endl;
+  
   return 0;
 }

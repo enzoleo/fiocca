@@ -141,7 +141,7 @@ auto romberg(Integrand&& integrand,
     // Swap previous and current rows as we only need the last row.
     // Note that this is an O(1) operation.
     std::swap(pre_row, cur_row);
-  }   
+  }
   return pre_row.back();
 }
 

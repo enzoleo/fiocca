@@ -3,6 +3,7 @@
 
 #include <type_traits>
 #include <limits>
+#include <array>
 
 namespace fiocca {
 
@@ -23,6 +24,19 @@ struct fill_array_helper<Array, Tuple, 0> {
     arr[0] = std::get<0>(tup);
   }
 };
+
+#ifndef __cpp_lib_to_array
+template<class Type, std::size_t N, std::size_t... index>
+constexpr std::array<std::remove_cv_t<Type>, N>
+  to_array_impl(Type (&arr)[N], std::index_sequence<index...>) {
+  return { { arr[index]... } };
+}
+template<class Type, std::size_t N, std::size_t... index>
+constexpr std::array<std::remove_cv_t<Type>, N>
+  to_array_impl(Type (&&arr)[N], std::index_sequence<index...>) {
+  return { { std::move(arr[index])... } };
+}
+#endif
 
 } // namespace detail
 
@@ -65,6 +79,26 @@ constexpr auto fill_array(const Tuple& tup) {
     std::tuple_size<ArrayType>::value - 1>::fill(tup, arr);
   return arr;
 }
+
+#ifndef __cpp_lib_to_array
+/**
+ * @brief Creates a std::array from the one dimensional built-in array. This
+ *  is a fall-back compatibility-aimed implementation according to the sample
+ *  version of cppreference. In c++20, use std::to_array instead!
+ * 
+ * @tparam Type the homogeneous array datatype.
+ * @tparam N the total size of the output array.
+ * @return an std::array containing the same data as the input built-in array.
+ */
+template<class Type, std::size_t N>
+constexpr std::array<std::remove_cv_t<Type>, N> to_array(Type (&arr)[N]) {
+  return detail::to_array_impl(arr, std::make_index_sequence<N>{});
+}
+template<class Type, std::size_t N>
+constexpr std::array<std::remove_cv_t<Type>, N> to_array(Type (&&arr)[N]) {
+  return detail::to_array_impl(std::move(arr), std::make_index_sequence<N>{});
+}
+#endif
 
 } // namespace fiocca
 

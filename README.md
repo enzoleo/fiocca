@@ -1,6 +1,6 @@
 # fiocca
 ![Build Status](https://img.shields.io/travis/enzoleo/fiocca?style=for-the-badge)
-![License](https://img.shields.io/github/license/enzoleo/fiocca?color=blue&style=for-the-badge)
+![License](https://img.shields.io/github/license/enzoleo/fiocca?color=black&style=for-the-badge)
 ![Repo Size](https://img.shields.io/github/repo-size/enzoleo/fiocca?style=for-the-badge)
 
 Fundamental implementations of some computational algorithms in plane geometry. It does not contain too complicated properties or theorems. However, I will upload some interesting problems (*in my own view*), that might be a little bit tedious and difficult to comprehend, to this repository :)
