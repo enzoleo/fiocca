@@ -10,9 +10,9 @@ before_install:
   - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
   - sudo apt-get update -qq
 install:
-  - sudo apt-get install -qq build-essential cmake
+  - sudo apt-get install -qq build-essential cmake gcc-10 g++-10
 script:
   - mkdir build
   - cd build
-  - cmake .. -DFIOCCA_BUILD_EXAMPLES=ON
+  - env CC=gcc-10 CXX=g++10 cmake .. -DFIOCCA_BUILD_EXAMPLES=ON
   - make

@@ -8,7 +8,7 @@ Fundamental implementations of some computational algorithms in plane geometry. 
 
 ## Build
 
-We enable building from `CMake`. Since this repository also tends to test some `C++20` features, make sure that your compiler has enough support. Specifically, `g++-9` or higher version is preferred. Provable compatibility is made for `C++17`, so at least work with a compiler supporting most of the  `C++17` features.
+We enable building from `CMake`. Since this repository also tends to test some `C++20` features, make sure that your compiler has enough support. Specifically, `g++-9` or higher version is preferred. Provable compatibility is made for `C++17` in the `cpp17` branch, so at least work with a compiler supporting most of the  `C++17` features.
 
 ```shell
 mkdir build
