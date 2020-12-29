@@ -14,5 +14,5 @@ install:
 script:
   - mkdir build
   - cd build
-  - env CC=gcc-10 CXX=g++10 cmake .. -DFIOCCA_BUILD_EXAMPLES=ON
+  - env CC=gcc-10 CXX=g++-10 cmake .. -DFIOCCA_BUILD_EXAMPLES=ON
   - make
