@@ -40,20 +40,11 @@ constexpr std::array<std::remove_cv_t<Type>, N>
 
 } // namespace detail
 
-#ifdef __cpp_concepts
 template<typename T>
 concept Floating = std::is_floating_point<T>::value;
-#endif
 
-#ifdef __cpp_concepts
 template<typename DataType>
 requires Floating<DataType>
-#else
-template<
-  typename DataType,
-  typename Enable = std::enable_if_t<std::is_floating_point_v<DataType> >
-  >
-#endif
 auto almost_zero(DataType x, size_t ulp = 1) {
   // The machine epsilon is applied. Refer to cppreference for more details.
   return std::fabs(x) <= std::numeric_limits<DataType>::epsilon() * ulp;

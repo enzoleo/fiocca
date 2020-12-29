@@ -9,12 +9,10 @@ namespace fiocca {
 
 namespace integral {
 
-#ifdef __cpp_concepts
 template<typename T, typename ValueType>
 concept Integrable = Floating<ValueType> && requires(T f, ValueType x) {
   { f(x) } -> Floating;
 };
-#endif
 
 /**
  * @brief The classical trapezoid algorithm.
@@ -27,17 +25,8 @@ concept Integrable = Floating<ValueType> && requires(T f, ValueType x) {
  *  determines the precision (cannot be specified explicitly).
  * @return the integral result.
  */
-#ifdef __cpp_concepts
 template<class DataType, class Integrand>
 requires Integrable<Integrand, DataType>
-#else
-template<
-  class DataType, class Integrand,
-  typename Enable = std::enable_if_t<
-    std::is_floating_point<DataType>::value &&
-    std::is_invocable_r<DataType, Integrand, DataType>::value>
-  >
-#endif
 constexpr auto trapezoid(Integrand&& integrand,
                          DataType min, DataType max,
                          size_t ngrid = 1e+6) {
@@ -60,17 +49,8 @@ constexpr auto trapezoid(Integrand&& integrand,
  *  determines the precision (cannot be specified explicitly).
  * @return the integral result.
  */
-#ifdef __cpp_concepts
 template<class DataType, class Integrand>
 requires Integrable<Integrand, DataType>
-#else
-template<
-  class DataType, class Integrand,
-  typename Enable = std::enable_if_t<
-    std::is_floating_point<DataType>::value &&
-    std::is_invocable_r<DataType, Integrand, DataType>::value>
-  >
-#endif
 constexpr auto simpson(Integrand&& integrand,
                        DataType min, DataType max,
                        size_t ngrid = 1e+6) {
@@ -97,17 +77,8 @@ constexpr auto simpson(Integrand&& integrand,
  *  which also determines the precision.
  * @return the integral result.
  */
-#ifdef __cpp_concepts
 template<class DataType, class Integrand>
 requires Integrable<Integrand, DataType>
-#else
-template<
-  class DataType, class Integrand,
-  typename Enable = std::enable_if_t<
-    std::is_floating_point<DataType>::value &&
-    std::is_invocable_r<DataType, Integrand, DataType>::value>
-  >
-#endif
 auto romberg(Integrand&& integrand,
              DataType min, DataType max,
              DataType accuracy = (DataType)1e-11,

@@ -24,16 +24,8 @@ auto expected_dist(const Rect<DataType>& lhs, const Rect<DataType>& rhs);
  * The constructors are declared private so it is invisible outside class.
  * Only friend function is allowed to access it, for distance calculation.
  */
-#ifdef __cpp_concepts
 template<class DataType = double>
 requires Floating<DataType>
-#else
-template<
-  class DataType = double,
-  typename Enable = std::enable_if_t<
-    std::is_floating_point<DataType>::value>
-  >
-#endif
 class TwinRect {
 public:
   /**
