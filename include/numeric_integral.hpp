@@ -9,10 +9,27 @@ namespace fiocca {
 
 namespace integral {
 
+/**
+ * Define the concept of integrable functions.
+ * Note that we separately define the one-dimensionally integrable and
+ * multi-dimensionally integrable functions.
+ * Some concepts are pre-defined in utilities.
+ */
 template<typename T, typename ValueType>
 concept Integrable = Floating<ValueType> && requires(T f, ValueType x) {
   { f(x) } -> Floating;
 };
+
+template<typename T, typename ...Ts>
+concept GeneralIntegrable = Homogeneous<Ts...> &&
+    requires(T f, Ts... args) {
+      { f(args...) } -> Floating;
+    };
+template<typename T, std::size_t dim, typename ValueType>
+concept MultiIntegrable = Floating<ValueType> &&
+    requires(T f, duplicator_tuple_t<dim, ValueType> tup) {
+      { std::apply(f, tup) } -> Floating;
+    };
 
 /**
  * @brief The classical trapezoid algorithm.
@@ -36,6 +53,26 @@ constexpr auto trapezoid(Integrand&& integrand,
   for (size_t i = 1; i != ngrid; ++i)
     sum += integrand(min + i * delta) * delta;
   return sum;
+}
+
+/**
+ * @brief The classical trapezoid algorithm for multi-dimensional
+ *  functions.
+ * @tparam dim the dimension of this integrand function.
+ * @param integrand the function to be integrated. It should satisfy
+ *  specific constraint that function call `integrand(floating, ...,
+ *  floating) -> floating` must be legal.
+ * @param itv the integral interval in each dimension.
+ * @param ngrid the number of grids in each dimension.
+ * @return the integral result.
+ */
+template<class DataType, class Integrand, std::size_t dim>
+requires MultiIntegrable<Integrand, dim, DataType>
+constexpr auto trapezoid(Integrand&& integrand,
+                         const DataType (&itv)[dim][2],
+                         const std::size_t (&ngrid)[dim]) {
+  // TODO: implement multi-dimensional loop.
+  return 0;
 }
 
 /**

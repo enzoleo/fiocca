@@ -28,7 +28,6 @@ auto main() -> int {
   fiocca::Point2d p { 2.2, 6.3 };
   std::cout << rect.contain(p) << std::endl;
   
-  //foo(1, {2, 3.14});
   auto res = fiocca::integral::trapezoid(
     [](double x) { return x * x; },
     { { 0.0, 1.0} }, { 10000 }
