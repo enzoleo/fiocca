@@ -30,10 +30,10 @@ requires Integrable<Integrand, DataType>
 constexpr auto trapezoid(Integrand&& integrand,
                          DataType min, DataType max,
                          size_t ngrid = 1e+6) {
-  DataType sum = 0; 
   DataType delta = (max - min) / ngrid;
+  DataType sum = (integrand(min) + integrand(max)) * delta / 2;
 #pragma omp parallel for reduction (+:sum)
-  for (size_t i = 0; i != ngrid; ++i)
+  for (size_t i = 1; i != ngrid; ++i)
     sum += integrand(min + i * delta) * delta;
   return sum;
 }

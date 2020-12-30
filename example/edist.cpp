@@ -23,9 +23,16 @@ auto main() -> int {
               << fiocca::expected_dist(rect1, rect2) << std::endl;
   }
 
+  std::cout << std::setprecision(6);
   fiocca::Rect rect(0.2, 0.3, 5.6, 5.8);
   fiocca::Point2d p { 2.2, 6.3 };
   std::cout << rect.contain(p) << std::endl;
   
+  //foo(1, {2, 3.14});
+  auto res = fiocca::integral::trapezoid(
+    [](double x) { return x * x; },
+    { { 0.0, 1.0} }, { 10000 }
+  );
+  std::cout << res << std::endl;
   return 0;
 }
