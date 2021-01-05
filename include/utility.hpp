@@ -2,8 +2,10 @@
 #define FIOCCA_UTILITY_HPP_
 
 #include <type_traits>
+#include <ranges>
 #include <limits>
 #include <array>
+#include "view/ext.hpp"
 
 namespace fiocca {
 
@@ -48,17 +50,16 @@ struct duplicator_impl {
 } // namespace detail
 
 template<typename T>
-concept Floating = std::is_floating_point<T>::value;
-
+concept floating = std::is_floating_point<T>::value;
 template<class... Ts>
-concept Homogeneous =
+concept homogeneous =
     sizeof...(Ts) < 2 ||
     std::conjunction_v<
       std::is_same<std::tuple_element_t<0, std::tuple<Ts...> >, Ts>...
     >;
 
 template<typename DataType>
-requires Floating<DataType>
+requires floating<DataType>
 auto almost_zero(DataType x, size_t ulp = 1) {
   // The machine epsilon is applied. Refer to cppreference for more details.
   return std::fabs(x) <= std::numeric_limits<DataType>::epsilon() * ulp;

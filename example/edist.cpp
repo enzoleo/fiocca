@@ -5,6 +5,7 @@
 #include <array>
 #include "rect.hpp"
 #include "expected_dist.hpp"
+#include "view/cartesian_product.hpp"
 
 auto main() -> int {
   int repeat;
@@ -33,5 +34,14 @@ auto main() -> int {
     { { 0.0, 1.0} }, { 10000 }
   );
   std::cout << res << std::endl;
+
+  std::vector vec1 {"甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"};
+  std::vector vec2 {"子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"};
+
+  auto cp_view = std::views::cartesian_product(
+    vec1 | std::views::all,
+    vec2 | std::views::all);
+
+  for (auto [x, y]: cp_view) std::cout << x << y << "\n";
   return 0;
 }

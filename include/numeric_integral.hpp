@@ -16,19 +16,19 @@ namespace integral {
  * Some concepts are pre-defined in utilities.
  */
 template<typename T, typename ValueType>
-concept Integrable = Floating<ValueType> && requires(T f, ValueType x) {
-  { f(x) } -> Floating;
+concept integrable = floating<ValueType> && requires(T f, ValueType x) {
+  { f(x) } -> floating;
 };
 
 template<typename T, typename ...Ts>
-concept GeneralIntegrable = Homogeneous<Ts...> &&
+concept general_integrable = homogeneous<Ts...> &&
     requires(T f, Ts... args) {
-      { f(args...) } -> Floating;
+      { f(args...) } -> floating;
     };
 template<typename T, std::size_t dim, typename ValueType>
-concept MultiIntegrable = Floating<ValueType> &&
+concept multi_integrable = floating<ValueType> &&
     requires(T f, duplicator_tuple_t<dim, ValueType> tup) {
-      { std::apply(f, tup) } -> Floating;
+      { std::apply(f, tup) } -> floating;
     };
 
 /**
@@ -43,7 +43,7 @@ concept MultiIntegrable = Floating<ValueType> &&
  * @return the integral result.
  */
 template<class DataType, class Integrand>
-requires Integrable<Integrand, DataType>
+requires integrable<Integrand, DataType>
 constexpr auto trapezoid(Integrand&& integrand,
                          DataType min, DataType max,
                          size_t ngrid = 1e+6) {
@@ -67,11 +67,15 @@ constexpr auto trapezoid(Integrand&& integrand,
  * @return the integral result.
  */
 template<class DataType, class Integrand, std::size_t dim>
-requires MultiIntegrable<Integrand, dim, DataType>
+requires multi_integrable<Integrand, dim, DataType>
 constexpr auto trapezoid(Integrand&& integrand,
                          const DataType (&itv)[dim][2],
                          const std::size_t (&ngrid)[dim]) {
-  // TODO: implement multi-dimensional loop.
+  // A perferred implementation is ranges::view::cartesian_product.
+  // It is not included in the C++20 ranges library currently.
+  // ranges::v3::views::cartesian_product is a candidate but we would
+  // not use it for considerations of the least dependencies.
+  
   return 0;
 }
 
@@ -87,7 +91,7 @@ constexpr auto trapezoid(Integrand&& integrand,
  * @return the integral result.
  */
 template<class DataType, class Integrand>
-requires Integrable<Integrand, DataType>
+requires integrable<Integrand, DataType>
 constexpr auto simpson(Integrand&& integrand,
                        DataType min, DataType max,
                        size_t ngrid = 1e+6) {
@@ -115,7 +119,7 @@ constexpr auto simpson(Integrand&& integrand,
  * @return the integral result.
  */
 template<class DataType, class Integrand>
-requires Integrable<Integrand, DataType>
+requires integrable<Integrand, DataType>
 auto romberg(Integrand&& integrand,
              DataType min, DataType max,
              DataType accuracy = (DataType)1e-11,

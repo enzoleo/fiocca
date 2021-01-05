@@ -14,7 +14,7 @@ namespace fiocca {
  *  in implementations instead.
  * @param lhs the lefthand side rectangle.
  * @param rhs the righthand side rectangle.
- * @return Floating (should be @DataType) representing distance.
+ * @return floating (should be @DataType) representing distance.
  */
 template<class DataType>
 auto expected_dist(const Rect<DataType>& lhs, const Rect<DataType>& rhs);
@@ -25,7 +25,7 @@ auto expected_dist(const Rect<DataType>& lhs, const Rect<DataType>& rhs);
  * Only friend function is allowed to access it, for distance calculation.
  */
 template<class DataType = double>
-requires Floating<DataType>
+requires floating<DataType>
 class TwinRect {
 public:
   /**
