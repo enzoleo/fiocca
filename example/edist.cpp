@@ -5,7 +5,7 @@
 #include <array>
 #include "rect.hpp"
 #include "expected_dist.hpp"
-#include "view/cartesian_product.hpp"
+#include "view/views.hpp"
 
 auto main() -> int {
   int repeat;
@@ -40,7 +40,8 @@ auto main() -> int {
 
   auto cp_view = std::views::cartesian_product(
     vec1 | std::views::all,
-    vec2 | std::views::all);
+    //vec2 | std::views::all);
+    std::views::iota(10));
 
   for (auto [x, y]: cp_view) std::cout << x << y << "\n";
   return 0;

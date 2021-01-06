@@ -40,7 +40,7 @@ public:
 
     constexpr auto operator*() const {
       return tuple_visit( // Not any overloading!
-          [](auto iter){ return std::ref(*iter); }, current_iter_);
+          [](auto iter){ return *iter; }, current_iter_);
     }
 
     constexpr _iterator& operator++() {
