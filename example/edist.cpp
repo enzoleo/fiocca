@@ -35,14 +35,16 @@ auto main() -> int {
   );
   std::cout << res << std::endl;
 
-  std::vector vec1 {"甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"};
-  std::vector vec2 {"子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"};
+  std::vector<char> vec1 {}; //std::vector vec1 {'a', 'b', 'c', 'd', 'e'};
+  std::vector vec2 {'w', 'x', 'y', 'z'};
 
   auto cp_view = std::views::cartesian_product(
     vec1 | std::views::all,
-    //vec2 | std::views::all);
-    std::views::iota(10));
+    vec2 | std::views::all);
+    //std::views::iota(10));
 
-  for (auto [x, y]: cp_view) std::cout << x << y << "\n";
+  for (auto&& [x, y]: cp_view) {
+    std::cout << x << y << "\n";
+  }
   return 0;
 }
