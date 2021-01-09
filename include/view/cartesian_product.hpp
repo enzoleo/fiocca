@@ -28,15 +28,14 @@ public:
     using iterator_category = typename iterator_traits<
       tuple_element_t<0, views_iter_t> >::iterator_category;
     using value_type = tuple<range_value_t<Views>...>;
-    using difference_type = range_difference_t<
-      tuple_element_t<0, tuple<Views...> > >;
+    using difference_type = common_type_t<range_difference_t<Views>...>;
 
     // Default constructors.
     _iterator() = default;
     template<typename ...Iterators>
     requires (sizeof...(Iterators) == cp_view_t::dim())
     constexpr _iterator(const cartesian_product_view& cp_view, Iterators... iters)
-        : current_iter_(make_tuple(move(iters)...)),
+        : current_iter_ { move(iters)... },
           cp_view_(addressof(cp_view)) // Not any overloading!
         {  }
 
@@ -87,12 +86,23 @@ public:
 
   struct _sentinel {
     _sentinel() = default;
-    constexpr explicit _sentinel(const cartesian_product_view& cp_view)
-        : end_(cp_view.sentinel()) { }
+    template<typename Visitor>
+    constexpr explicit _sentinel( // Specify sentinel via a visitor.
+      const cartesian_product_view& cp_view, Visitor&& vis)
+        : end_(cp_view._visit(std::forward<Visitor>(vis))) { }
 
     friend constexpr bool // Define _eq for friend accessing.
     operator==(const _iterator& iterator, const _sentinel& sentinel) {
       return sentinel._eq(iterator);
+    }
+
+    constexpr auto prev() const
+    requires variadic_bidirectional_ranges<Views...> {
+      auto _visit_impl = // Template lambda expression.
+        [&]<size_t... Ns>(index_sequence<Ns...>) {
+          return tuple { std::ranges::prev(get<Ns>(end_))... };
+        };
+      return _visit_impl(make_index_sequence<sizeof...(Views)>());
     }
 
   private:
@@ -111,8 +121,6 @@ public:
     tuple<sentinel_t<Views>...> end_;
   };
 
-  constexpr auto sentinel() { return _visit(ranges::end); }
-  constexpr const auto sentinel() const { return _visit(ranges::end); }
   constexpr _iterator begin() const {
     auto _visit_impl = // Template lambda expression.
       [&]<size_t... Ns>(index_sequence<Ns...>) {
@@ -121,7 +129,12 @@ public:
     return _visit_impl(make_index_sequence<sizeof...(Views)>());
   }
   constexpr _sentinel end() const {
-    return _sentinel { *this };
+    return _sentinel { *this, ranges::end };
+  }
+  constexpr _sentinel rend() const
+  requires variadic_sized_ranges<Views...> {
+    return _sentinel { *this,
+      [](auto view){ return ranges::prev(ranges::begin(view)); } };
   }
 
   constexpr auto size() const

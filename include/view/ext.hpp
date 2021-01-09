@@ -8,9 +8,11 @@ namespace std {
 namespace ranges {
 
 template<class... Ts>
-concept variadic_views = (std::ranges::view<Ts> && ...);
+concept variadic_views = (view<Ts> && ...);
 template<class... Ts>
-concept variadic_sized_ranges = (std::ranges::sized_range<Ts> && ...);
+concept variadic_sized_ranges = (sized_range<Ts> && ...);
+template<class... Ts>
+concept variadic_bidirectional_ranges = (bidirectional_range<Ts> && ...);
 
 } // namespace ranges
 
