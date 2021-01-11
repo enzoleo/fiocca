@@ -8,7 +8,7 @@ namespace std {
 namespace ranges {
 
 template<typename ...Views>
-requires variadic_views<Views...>
+requires ext::variadic_views<Views...>
 class cartesian_product_view {
 public:
   static constexpr auto dim() { return sizeof...(Views); }
@@ -84,23 +84,31 @@ public:
     const cartesian_product_view* cp_view_ { nullptr };
   };
 
+  struct _reverse_iterator {
+
+  };
+
   struct _sentinel {
     _sentinel() = default;
     template<typename Visitor>
     constexpr explicit _sentinel( // Specify sentinel via a visitor.
       const cartesian_product_view& cp_view, Visitor&& vis)
-        : end_(cp_view._visit(std::forward<Visitor>(vis))) { }
+        : end_(cp_view._visit(std::forward<Visitor>(vis))),
+          cp_view_(addressof(cp_view)) { }
 
     friend constexpr bool // Define _eq for friend accessing.
     operator==(const _iterator& iterator, const _sentinel& sentinel) {
       return sentinel._eq(iterator);
     }
 
-    constexpr auto prev() const
-    requires variadic_bidirectional_ranges<Views...> {
+    // Trace the previous iterator (the last element in the range)
+    // according to the given sentinel. This function would be enabled if and
+    // only if each subview is bidirectional.
+    constexpr _iterator prev() const
+    requires ext::variadic_bidirectional_ranges<Views...> {
       auto _visit_impl = // Template lambda expression.
         [&]<size_t... Ns>(index_sequence<Ns...>) {
-          return tuple { std::ranges::prev(get<Ns>(end_))... };
+          return _iterator { *cp_view_, std::ranges::prev(get<Ns>(end_))... };
         };
       return _visit_impl(make_index_sequence<sizeof...(Views)>());
     }
@@ -119,6 +127,7 @@ public:
       return _visit_impl(make_index_sequence<sizeof...(Views)>());
     }
     tuple<sentinel_t<Views>...> end_;
+    const cartesian_product_view* cp_view_ { nullptr };
   };
 
   constexpr _iterator begin() const {
@@ -132,13 +141,13 @@ public:
     return _sentinel { *this, ranges::end };
   }
   constexpr _sentinel rend() const
-  requires variadic_sized_ranges<Views...> {
+  requires ext::variadic_sized_ranges<Views...> {
     return _sentinel { *this,
       [](auto view){ return ranges::prev(ranges::begin(view)); } };
   }
 
   constexpr auto size() const
-  requires variadic_sized_ranges<Views...> {
+  requires ext::variadic_sized_ranges<Views...> {
     auto _visit_impl = // Template lambda expression.
       [&]<size_t... Ns>(index_sequence<Ns...>) {
         return (std::ranges::size(get<Ns>(views_)) * ...);
@@ -146,7 +155,7 @@ public:
     return _visit_impl(make_index_sequence<sizeof...(Views)>());
   }
   constexpr auto ssize() const
-  requires variadic_sized_ranges<Views...> {
+  requires ext::variadic_sized_ranges<Views...> {
     auto _visit_impl = // Template lambda expression.
       [&]<size_t... Ns>(index_sequence<Ns...>) {
         return (std::ranges::ssize(get<Ns>(views_)) * ...);
