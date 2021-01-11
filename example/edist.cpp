@@ -35,15 +35,14 @@ auto main() -> int {
   );
   std::cout << res << std::endl;
 
-  std::vector<char> vec1 {}; //std::vector vec1 {'a', 'b', 'c', 'd', 'e'};
+  std::array vec1 {'a', 'b', 'c', 'd', 'e'};
   std::vector vec2 {'w', 'x', 'y', 'z'};
 
   auto cp_view = std::views::cartesian_product(
     vec1 | std::views::all,
     vec2 | std::views::all);
-    //std::views::iota(10));
 
-  for (auto&& [x, y]: cp_view) {
+  for (auto&& [x, y]: cp_view | std::views::reverse) {
     std::cout << x << y << "\n";
   }
   return 0;

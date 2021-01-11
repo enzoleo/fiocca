@@ -17,6 +17,7 @@ public:
           : views_{ move(views)... } {  }
   
   struct _sentinel;
+  struct _reverse_sentinel;
   struct _iterator {
     using cp_view_t = cartesian_product_view;
     using views_iter_t = tuple<iterator_t<Views>...>;
@@ -54,8 +55,17 @@ public:
     }
     constexpr _iterator operator++(int)
     requires (forward_range<Views> && ...) {
-      auto tmp = *this; ++*this;
-      return tmp;
+      auto tmp = *this; ++*this; return tmp;
+    }
+
+    constexpr _iterator& operator--()
+    requires ext::variadic_bidirectional_ranges<Views...> {
+      _decrement_impl<sizeof...(Views)>();
+      return *this;
+    }
+    constexpr _iterator operator--(int)
+    requires ext::variadic_bidirectional_ranges<Views...> {
+      auto tmp = *this; --*this; return tmp;
     }
 
     friend constexpr bool operator==(const _iterator& lhs, const _iterator& rhs)
@@ -66,6 +76,7 @@ public:
   private:
     friend cartesian_product_view;
     friend _sentinel;
+    friend _reverse_sentinel;
 
     template<size_t index>
     constexpr void _increment_impl() {
@@ -80,20 +91,82 @@ public:
       } else return;
     }
 
+    template<size_t index>
+    constexpr void _decrement_impl() {
+      constexpr auto N = index - 1;
+      if (auto& it = get<N>(current_iter_);
+          --it == ext::head(get<N>(cp_view_->views_))) {
+        if constexpr (N == 0) return;
+        else {
+          it = ext::back(get<N>(cp_view_->views_));
+          _decrement_impl<N>();
+        }
+      } else return;
+    }
+  protected:
     views_iter_t current_iter_ { };
     const cartesian_product_view* cp_view_ { nullptr };
   };
 
   struct _reverse_iterator {
+    using cp_view_t = cartesian_product_view;
 
+    // Type aliases for iterators. They are essential to the basic
+    // iterator actions and related functions.
+    using iterator_category = _iterator::iterator_category;
+    using value_type = _iterator::value_type;
+    using difference_type = _iterator::difference_type;
+
+    // Default constructors.
+    _reverse_iterator() = default;
+    constexpr explicit _reverse_iterator(_iterator iter)
+        : current_(iter) { }
+    
+    constexpr _reverse_iterator& operator++()
+    requires ext::variadic_bidirectional_ranges<Views...> {
+      --current_; return *this;
+    }
+    constexpr _reverse_iterator operator++(int)
+    requires ext::variadic_bidirectional_ranges<Views...> {
+      auto tmp = *this; ++*this; return tmp;
+    }
+
+    constexpr _reverse_iterator& operator--()
+    requires ext::variadic_bidirectional_ranges<Views...> {
+      ++current_; return *this;
+    }
+    constexpr _iterator operator--(int)
+    requires ext::variadic_bidirectional_ranges<Views...> {
+      auto tmp = *this; --*this; return tmp;
+    }
+
+    // Note the dereference does not return the reference to the
+    // element previous to current, unlike normal reverse iterators.
+    // We adopt this implementation for convenient comparison to the
+    // sentinel type.
+    constexpr auto operator*() const { return *current_; }
+
+    // Return a copy of the forward iterator base. Note that this
+    // base method returns the reference to the element next to the
+    // current iterator, remaining the semantics of other normal
+    // reverse iterators.
+    constexpr auto base() const noexcept {
+      auto tmp = current_; return *++tmp;
+    }
+
+  protected:
+    friend cartesian_product_view;
+    friend _iterator;
+    friend _reverse_sentinel;
+    
+    // The underlying iterator of which base() returns a copy.
+    _iterator current_;
   };
 
   struct _sentinel {
     _sentinel() = default;
-    template<typename Visitor>
-    constexpr explicit _sentinel( // Specify sentinel via a visitor.
-      const cartesian_product_view& cp_view, Visitor&& vis)
-        : end_(cp_view._visit(std::forward<Visitor>(vis))),
+    constexpr explicit _sentinel(const cartesian_product_view& cp_view)
+        : end_(cp_view._visit(ranges::end)),
           cp_view_(addressof(cp_view)) { }
 
     friend constexpr bool // Define _eq for friend accessing.
@@ -108,7 +181,7 @@ public:
     requires ext::variadic_bidirectional_ranges<Views...> {
       auto _visit_impl = // Template lambda expression.
         [&]<size_t... Ns>(index_sequence<Ns...>) {
-          return _iterator { *cp_view_, std::ranges::prev(get<Ns>(end_))... };
+          return _iterator { *cp_view_, ranges::prev(get<Ns>(end_))... };
         };
       return _visit_impl(make_index_sequence<sizeof...(Views)>());
     }
@@ -126,7 +199,47 @@ public:
       // equal to according ending directly induces an ending iterator.
       return _visit_impl(make_index_sequence<sizeof...(Views)>());
     }
+
     tuple<sentinel_t<Views>...> end_;
+    const cartesian_product_view* cp_view_ { nullptr };
+  };
+
+  struct _reverse_sentinel {
+    _reverse_sentinel() = default;
+    constexpr explicit _reverse_sentinel(
+      const cartesian_product_view& cp_view)
+        : rend_(cp_view._visit([](auto view){
+            return ranges::prev(ranges::begin(view));
+          })),
+          cp_view_(addressof(cp_view)) { }
+
+    friend constexpr bool // Define _eq for friend accessing.
+    operator==(const _reverse_iterator& iterator,
+               const _reverse_sentinel& sentinel) {
+      return sentinel._eq(iterator);
+    }
+
+    constexpr _iterator prev() const
+    requires ext::variadic_bidirectional_ranges<Views...> {
+      auto _visit_impl = // Template lambda expression.
+        [&]<size_t... Ns>(index_sequence<Ns...>) {
+          return _iterator { *cp_view_, ranges::prev(get<Ns>(rend_))... };
+        };
+      return _visit_impl(make_index_sequence<sizeof...(Views)>());
+    }
+
+  private:
+    constexpr bool _eq(const _reverse_iterator& iterator) const {
+      // Check whether a given reverse iterator arrives at the ending.
+      auto _visit_impl = // Template lambda expression.
+        [&]<size_t... Ns>(index_sequence<Ns...>) {
+          return ((get<Ns>(iterator.current_.current_iter_)
+            == get<Ns>(rend_)) || ...);
+        };
+      return _visit_impl(make_index_sequence<sizeof...(Views)>());
+    }
+
+    tuple<sentinel_t<Views>...> rend_;
     const cartesian_product_view* cp_view_ { nullptr };
   };
 
@@ -138,12 +251,17 @@ public:
     return _visit_impl(make_index_sequence<sizeof...(Views)>());
   }
   constexpr _sentinel end() const {
-    return _sentinel { *this, ranges::end };
+    return _sentinel { *this };
   }
-  constexpr _sentinel rend() const
+
+  // Note that the accesses to rbegin and rend iterators do not
+  // depend on whether the range is bidirectional or not.
+  constexpr _reverse_iterator rbegin() const {
+    return _reverse_iterator { ext::prev(end()) };
+  }
+  constexpr _reverse_sentinel rend() const
   requires ext::variadic_sized_ranges<Views...> {
-    return _sentinel { *this,
-      [](auto view){ return ranges::prev(ranges::begin(view)); } };
+    return _reverse_sentinel { *this };
   }
 
   constexpr auto size() const
