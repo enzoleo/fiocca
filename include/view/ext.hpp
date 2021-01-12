@@ -44,12 +44,22 @@ auto prev(Iterator iter) {
 
 template<typename Range>
 auto back(Range&& r) { // The last element in the range.
-  return std::ranges::ext::prev(end(std::forward<Range>(r)));
+  return std::ranges::ext::prev(end(forward<Range>(r)));
 }
 template<typename Range>
 auto head(Range&& r) { // The head element prior to the beginning.
-  return std::ranges::ext::prev(begin(std::forward<Range>(r)));
+  return std::ranges::ext::prev(begin(forward<Range>(r)));
 }
+
+template<typename T>
+struct const_trait { using type = const T; using identity = T; };
+template<typename T>
+struct const_trait<T&> {
+  using type = const remove_reference_t<T>&;
+};
+
+template<typename T>
+using const_trait_t = typename const_trait<T>::type;
 
 } // namespace ext
 

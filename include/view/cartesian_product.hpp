@@ -14,14 +14,15 @@ public:
   static constexpr auto dim() { return sizeof...(Views); }
   cartesian_product_view() = default;
   constexpr explicit cartesian_product_view(Views... views)
-          : views_{ move(views)... } {  }
+      : views_{ move(views)... } {  }
   
   struct _sentinel;
   struct _reverse_sentinel;
-  struct _iterator {
+  struct _const_sentinel;
+
+  struct _iterator_base {
     using cp_view_t = cartesian_product_view;
     using views_iter_t = tuple<iterator_t<Views>...>;
-    using deref_t = tuple<decltype(*declval<iterator_t<Views> >())...>;
 
     // Type aliases for iterators. They are essential to the basic
     // iterator actions and related functions.
@@ -31,47 +32,20 @@ public:
     using difference_type = common_type_t<range_difference_t<Views>...>;
 
     // Default constructors.
-    _iterator() = default;
+    _iterator_base() = default;
     template<typename ...Iterators>
     requires (sizeof...(Iterators) == cp_view_t::dim())
-    constexpr _iterator(const cartesian_product_view& cp_view, Iterators... iters)
+    constexpr _iterator_base(const cartesian_product_view& cp_view, Iterators... iters)
         : current_iter_ { move(iters)... },
           cp_view_(addressof(cp_view)) {  }
 
-    constexpr auto operator*() {
-      // Have to consider both reference and non-reference types.
-      auto _visit_impl =
-        [&]<size_t... Ns>(index_sequence<Ns...>) {
-          return deref_t { *get<Ns>(current_iter_)... };
-        }; // Return type deref_t!
-      return _visit_impl(make_index_sequence<dim()>());
-    }
-
-    constexpr _iterator& operator++() {
-      _increment_impl<sizeof...(Views)>();
-      return *this;
-    }
-    constexpr _iterator operator++(int)
-    requires (forward_range<Views> && ...) {
-      auto tmp = *this; ++*this; return tmp;
-    }
-
-    constexpr _iterator& operator--()
-    requires ext::variadic_bidirectional_ranges<Views...> {
-      _decrement_impl<sizeof...(Views)>();
-      return *this;
-    }
-    constexpr _iterator operator--(int)
-    requires ext::variadic_bidirectional_ranges<Views...> {
-      auto tmp = *this; --*this; return tmp;
-    }
-
-    friend constexpr bool operator==(const _iterator& lhs, const _iterator& rhs)
+    friend constexpr bool operator==(
+      const _iterator_base& lhs, const _iterator_base& rhs)
     requires (equality_comparable<iterator_t<Views> > && ...) {
       return lhs.current_iter_ == rhs.current_iter_;
     }
 
-  private:
+  protected:
     friend cartesian_product_view;
     friend _sentinel;
 
@@ -100,9 +74,90 @@ public:
         }
       } else return;
     }
-  protected:
+
     views_iter_t current_iter_ { };
     const cartesian_product_view* cp_view_ { nullptr };
+  };
+
+  struct _iterator : public _iterator_base {
+    using deref_t = tuple<decltype(*declval<iterator_t<Views> >())...>;
+    using iterator_category = _iterator_base::iterator_category;
+    using value_type = _iterator_base::value_type;
+    using difference_type = _iterator_base::difference_type;
+
+    // Inherit the constructors of iterator base class.
+    using _iterator_base::_iterator_base;
+    constexpr auto operator*() {
+      // Have to consider both reference and non-reference types.
+      auto _visit_impl =
+        [&]<size_t... Ns>(index_sequence<Ns...>) {
+          return deref_t { *get<Ns>(this->current_iter_)... };
+        }; // Return type deref_t!
+      return _visit_impl(make_index_sequence<dim()>());
+    }
+
+    constexpr _iterator& operator++() {
+      this->template _increment_impl<sizeof...(Views)>();
+      return *this;
+    }
+    constexpr _iterator operator++(int)
+    requires (forward_range<Views> && ...) {
+      auto tmp = *this; ++*this; return tmp;
+    }
+
+    constexpr _iterator& operator--()
+    requires ext::variadic_bidirectional_ranges<Views...> {
+      this->template _decrement_impl<sizeof...(Views)>();
+      return *this;
+    }
+    constexpr _iterator operator--(int)
+    requires ext::variadic_bidirectional_ranges<Views...> {
+      auto tmp = *this; --*this; return tmp;
+    }
+  private:
+    friend cartesian_product_view;
+    friend _sentinel;
+  };
+
+  struct _const_iterator : public _iterator_base {
+    using deref_t = tuple<
+      ext::const_trait_t<decltype(*declval<iterator_t<Views> >())>...>;
+    using iterator_category = _iterator_base::iterator_category;
+    using value_type = _iterator_base::value_type;
+    using difference_type = _iterator_base::difference_type;
+
+    // Inherit the constructors of iterator base class.
+    using _iterator_base::_iterator_base;
+    constexpr auto operator*() {
+      // Have to consider both reference and non-reference types.
+      auto _visit_impl =
+        [&]<size_t... Ns>(index_sequence<Ns...>) {
+          return deref_t { *get<Ns>(this->current_iter_)... };
+        }; // Return type deref_t!
+      return _visit_impl(make_index_sequence<dim()>());
+    }
+
+    constexpr _const_iterator& operator++() {
+      this->template _increment_impl<sizeof...(Views)>();
+      return *this;
+    }
+    constexpr _const_iterator operator++(int)
+    requires (forward_range<Views> && ...) {
+      auto tmp = *this; ++*this; return tmp;
+    }
+
+    constexpr _const_iterator& operator--()
+    requires ext::variadic_bidirectional_ranges<Views...> {
+      this->template _decrement_impl<sizeof...(Views)>();
+      return *this;
+    }
+    constexpr _const_iterator operator--(int)
+    requires ext::variadic_bidirectional_ranges<Views...> {
+      auto tmp = *this; --*this; return tmp;
+    }
+  private:
+    friend cartesian_product_view;
+    friend _const_sentinel;
   };
 
   struct _reverse_iterator {
@@ -200,6 +255,42 @@ public:
     const cartesian_product_view* cp_view_ { nullptr };
   };
 
+  struct _const_sentinel {
+    _const_sentinel() = default;
+    constexpr explicit _const_sentinel(const cartesian_product_view& cp_view)
+        : end_(cp_view._visit(ranges::end)),
+          cp_view_(addressof(cp_view)) { }
+
+    friend constexpr bool // Define _eq for friend accessing.
+    operator==(const _const_iterator& iterator,
+               const _const_sentinel& sentinel) {
+      return sentinel._eq(iterator);
+    }
+
+    constexpr _const_iterator prev() const
+    requires ext::variadic_bidirectional_ranges<Views...> {
+      auto _visit_impl = // Template lambda expression.
+        [&]<size_t... Ns>(index_sequence<Ns...>) {
+          return _iterator { *cp_view_, ranges::prev(get<Ns>(end_))... };
+        };
+      return _visit_impl(make_index_sequence<sizeof...(Views)>());
+    }
+
+  private:
+    constexpr bool _eq(const _const_iterator& iterator) const {
+      // Check whether a given const iterator arrives at the ending.
+      auto _visit_impl = // Template lambda expression.
+        [&]<size_t... Ns>(index_sequence<Ns...>) {
+          return ((get<Ns>(iterator.current_iter_)
+            == get<Ns>(end_)) || ...);
+        };
+      return _visit_impl(make_index_sequence<sizeof...(Views)>());
+    }
+
+    tuple<sentinel_t<Views>...> end_;
+    const cartesian_product_view* cp_view_ { nullptr };
+  };
+
   struct _reverse_sentinel {
     _reverse_sentinel() = default;
     constexpr explicit _reverse_sentinel(
@@ -250,15 +341,15 @@ public:
     return _sentinel { *this };
   }
 
-  constexpr const _iterator cbegin() const {
+  constexpr _const_iterator cbegin() const {
     auto _visit_impl = // Template lambda expression.
       [&]<size_t... Ns>(index_sequence<Ns...>) {
-        return _iterator { *this, ranges::cbegin(get<Ns>(views_))... };
+        return _const_iterator { *this, ranges::cbegin(get<Ns>(views_))... };
       };
     return _visit_impl(make_index_sequence<sizeof...(Views)>());
   }
-  constexpr const _sentinel cend() const {
-    return _sentinel { *this };
+  constexpr _const_sentinel cend() const {
+    return _const_sentinel { *this };
   }
 
   // Note that the accesses to rbegin and rend iterators do not
