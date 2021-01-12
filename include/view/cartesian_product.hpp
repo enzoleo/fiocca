@@ -21,8 +21,7 @@ public:
   struct _iterator {
     using cp_view_t = cartesian_product_view;
     using views_iter_t = tuple<iterator_t<Views>...>;
-    using dereference_t = tuple<
-      decltype(*declval<iterator_t<Views> >())...>;
+    using deref_t = tuple<decltype(*declval<iterator_t<Views> >())...>;
 
     // Type aliases for iterators. They are essential to the basic
     // iterator actions and related functions.
@@ -37,15 +36,14 @@ public:
     requires (sizeof...(Iterators) == cp_view_t::dim())
     constexpr _iterator(const cartesian_product_view& cp_view, Iterators... iters)
         : current_iter_ { move(iters)... },
-          cp_view_(addressof(cp_view)) // Not any overloading!
-        {  }
+          cp_view_(addressof(cp_view)) {  }
 
-    constexpr auto operator*() const {
+    constexpr auto operator*() {
       // Have to consider both reference and non-reference types.
       auto _visit_impl =
         [&]<size_t... Ns>(index_sequence<Ns...>) {
-          return dereference_t { *get<Ns>(current_iter_)... };
-        }; // Return type dereference_t!
+          return deref_t { *get<Ns>(current_iter_)... };
+        }; // Return type deref_t!
       return _visit_impl(make_index_sequence<dim()>());
     }
 
@@ -76,7 +74,6 @@ public:
   private:
     friend cartesian_product_view;
     friend _sentinel;
-    friend _reverse_sentinel;
 
     template<size_t index>
     constexpr void _increment_impl() {
@@ -144,7 +141,7 @@ public:
     // element previous to current, unlike normal reverse iterators.
     // We adopt this implementation for convenient comparison to the
     // sentinel type.
-    constexpr auto operator*() const { return *current_; }
+    constexpr auto operator*() { return *current_; }
 
     // Return a copy of the forward iterator base. Note that this
     // base method returns the reference to the element next to the
@@ -156,7 +153,6 @@ public:
 
   protected:
     friend cartesian_product_view;
-    friend _iterator;
     friend _reverse_sentinel;
     
     // The underlying iterator of which base() returns a copy.
@@ -243,23 +239,34 @@ public:
     const cartesian_product_view* cp_view_ { nullptr };
   };
 
-  constexpr _iterator begin() const {
+  constexpr _iterator begin() {
     auto _visit_impl = // Template lambda expression.
       [&]<size_t... Ns>(index_sequence<Ns...>) {
         return _iterator { *this, ranges::begin(get<Ns>(views_))... };
       };
     return _visit_impl(make_index_sequence<sizeof...(Views)>());
   }
-  constexpr _sentinel end() const {
+  constexpr _sentinel end() {
+    return _sentinel { *this };
+  }
+
+  constexpr const _iterator cbegin() const {
+    auto _visit_impl = // Template lambda expression.
+      [&]<size_t... Ns>(index_sequence<Ns...>) {
+        return _iterator { *this, ranges::cbegin(get<Ns>(views_))... };
+      };
+    return _visit_impl(make_index_sequence<sizeof...(Views)>());
+  }
+  constexpr const _sentinel cend() const {
     return _sentinel { *this };
   }
 
   // Note that the accesses to rbegin and rend iterators do not
   // depend on whether the range is bidirectional or not.
-  constexpr _reverse_iterator rbegin() const {
+  constexpr _reverse_iterator rbegin() {
     return _reverse_iterator { ext::prev(end()) };
   }
-  constexpr _reverse_sentinel rend() const
+  constexpr _reverse_sentinel rend()
   requires ext::variadic_sized_ranges<Views...> {
     return _reverse_sentinel { *this };
   }
