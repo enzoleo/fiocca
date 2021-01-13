@@ -31,10 +31,10 @@ endif()
 set(FIOCCA_BUILD_EXAMPLES ON)
 set(FIOCCA_EXAMPLE_DIR ${PROJECT_SOURCE_DIR}/example)
 if(FIOCCA_BUILD_EXAMPLES)
-  add_executable(
-    edist_example
-    ${FIOCCA_EXAMPLE_DIR}/edist.cpp)
+  add_executable(edist_example ${FIOCCA_EXAMPLE_DIR}/edist.cpp)
+  add_executable(cp_view_example ${FIOCCA_EXAMPLE_DIR}/view/cartesian_product.cpp)
   target_link_libraries(edist_example fiocca)
+  target_link_libraries(cp_view_example fiocca)
 endif()
 
 # Install settings.

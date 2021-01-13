@@ -5,7 +5,6 @@
 #include <array>
 #include "rect.hpp"
 #include "expected_dist.hpp"
-#include "view/views.hpp"
 
 auto main() -> int {
   int repeat;
@@ -35,23 +34,5 @@ auto main() -> int {
   );
   std::cout << res << std::endl;
 
-  std::array vec1 {'a', 'b', 'c', 'd', 'e'};
-  std::vector vec2 {'w', 'x', 'y', 'z'};
-
-  auto cp_view = std::views::cartesian_product(
-    vec1 | std::views::all,
-    vec2 | std::views::all);
-
-  for (const auto& [x, y]: cp_view) {// | std::views::reverse) {
-    x = 'k';
-    std::cout << x << y << "\n";
-  }
-  for (auto it = cp_view.cbegin(); it != cp_view.cend(); ++it) {
-    std::get<0>(*it) = 'x';
-  }
-  char ch = 'r';
-  for (auto& elem : vec1 | std::views::reverse)
-    elem = ch++;
-  for (auto v : vec1) std::cout << v << std::endl;
   return 0;
 }
