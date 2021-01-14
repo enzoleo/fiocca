@@ -13,8 +13,8 @@ class cartesian_product_view {
 public:
   static constexpr auto dim() { return sizeof...(Views); }
   cartesian_product_view() = default;
-  constexpr explicit cartesian_product_view(Views... views)
-      : views_{ move(views)... } {  }
+  constexpr explicit cartesian_product_view(Views&&... views)
+      : views_{ forward<Views>(views)... } {  }
   
   template<typename _iterator_t> struct _sentinel_impl;
   struct _reverse_sentinel;

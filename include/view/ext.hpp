@@ -52,7 +52,7 @@ auto head(Range&& r) { // The head element prior to the beginning.
 }
 
 template<typename T>
-struct const_trait { using type = const T; using identity = T; };
+struct const_trait { using type = const T; };
 template<typename T>
 struct const_trait<T&> {
   using type = const remove_reference_t<T>&;
