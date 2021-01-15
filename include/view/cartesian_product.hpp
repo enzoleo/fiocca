@@ -37,8 +37,8 @@ public:
     _iterator_base() = default;
     template<typename ...Iterators>
     requires (sizeof...(Iterators) == cp_view_t::dim())
-    constexpr _iterator_base(const cartesian_product_view& cp_view, Iterators... iters)
-        : current_iter_ { move(iters)... },
+    constexpr _iterator_base(const cartesian_product_view& cp_view, Iterators&&... iters)
+        : current_iter_ { forward<Iterators>(iters)... },
           cp_view_(addressof(cp_view)) {  }
 
     friend constexpr bool operator==(
