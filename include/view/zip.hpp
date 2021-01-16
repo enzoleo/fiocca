@@ -1,5 +1,5 @@
-#ifndef FIOCCA_VIEW_CARTESIAN_PRODUCT_HPP_
-#define FIOCCA_VIEW_CARTESIAN_PRODUCT_HPP_
+#ifndef FIOCCA_VIEW_ZIP_HPP_
+#define FIOCCA_VIEW_ZIP_HPP_
 
 #include "ext.hpp"
 
@@ -9,18 +9,18 @@ namespace ranges {
 
 template<typename ...Views>
 requires ext::variadic_views<Views...>
-class cartesian_product_view {
+class zip_view {
 public:
   static constexpr auto dim() { return sizeof...(Views); }
-  cartesian_product_view() = default;
-  constexpr explicit cartesian_product_view(Views&&... views)
+  zip_view() = default;
+  constexpr explicit zip_view(Views&&... views)
       : views_{ forward<Views>(views)... } {  }
   
   template<typename _iterator_t> struct _sentinel_impl;
   struct _reverse_sentinel;
 
   struct _iterator_base {
-    using cp_view_t = cartesian_product_view;
+    using zip_view_t = zip_view;
     using views_iter_t = tuple<iterator_t<Views>...>;
     using deref_t = tuple<decltype(*declval<iterator_t<Views> >())...>;
     using const_deref_t = tuple<
@@ -36,10 +36,10 @@ public:
     // Default constructors.
     _iterator_base() = default;
     template<typename ...Iterators>
-    requires (sizeof...(Iterators) == cp_view_t::dim())
-    constexpr _iterator_base(const cartesian_product_view& cp_view, Iterators&&... iters)
+    requires (sizeof...(Iterators) == zip_view_t::dim())
+    constexpr _iterator_base(const zip_view& zview, Iterators&&... iters)
         : current_iter_ { forward<Iterators>(iters)... },
-          cp_view_(addressof(cp_view)) {  }
+          zview_(addressof(zview)) {  }
 
     friend constexpr bool operator==(
       const _iterator_base& lhs, const _iterator_base& rhs)
@@ -48,38 +48,25 @@ public:
     }
 
   protected:
-    friend cartesian_product_view;
+    friend zip_view;
     template<typename _iterator_t> friend struct _sentinel_impl;
 
     template<size_t index>
     constexpr void _increment_impl() {
-      constexpr auto N = index - 1;
-      auto& it = get<N>(current_iter_);
-      if (auto view = get<N>(cp_view_->views_);
-          ++it == ranges::end(view)) {
-        if constexpr (N == 0) return;
-        else {
-          it = ranges::begin(view);
-          _increment_impl<N>();
-        }
-      } else return;
+      ++get<index - 1>(current_iter_);
+      if constexpr (index == 1) return;
+      else _increment_impl<index - 1>();
     }
 
     template<size_t index>
     constexpr void _decrement_impl() {
-      constexpr auto N = index - 1;
-      if (auto& it = get<N>(current_iter_);
-          --it == ext::head(get<N>(cp_view_->views_))) {
-        if constexpr (N == 0) return;
-        else {
-          it = ext::back(get<N>(cp_view_->views_));
-          _decrement_impl<N>();
-        }
-      } else return;
+      --get<index - 1>(current_iter_);
+      if constexpr (index == 1) return;
+      else _decrement_impl<index - 1>();
     }
 
     views_iter_t current_iter_ { };
-    const cartesian_product_view* cp_view_ { nullptr };
+    const zip_view* zview_ { nullptr };
   };
 
   template<typename deref_t>
@@ -128,7 +115,7 @@ public:
   using _const_iterator = _iterator_impl<typename _iterator_base::const_deref_t>;
 
   struct _reverse_iterator {
-    using cp_view_t = cartesian_product_view;
+    using zip_view_t = zip_view;
 
     // Type aliases for iterators. They are essential to the basic
     // iterator actions and related functions.
@@ -164,17 +151,12 @@ public:
     // We adopt this implementation for convenient comparison to the
     // sentinel type.
     constexpr auto operator*() { return *current_; }
-
-    // Return a copy of the forward iterator base. Note that this
-    // base method returns the reference to the element next to the
-    // current iterator, remaining the semantics of other normal
-    // reverse iterators.
     constexpr auto base() const noexcept {
       auto tmp = current_; return *++tmp;
     }
 
   protected:
-    friend cartesian_product_view;
+    friend zip_view;
     friend _reverse_sentinel;
     
     // The underlying iterator of which base() returns a copy.
@@ -184,23 +166,20 @@ public:
   template<typename _iterator_t>
   struct _sentinel_impl {
     _sentinel_impl() = default;
-    constexpr explicit _sentinel_impl(const cartesian_product_view& cp_view)
-        : end_(cp_view._visit([](auto view){ return ranges::end(view); })),
-          cp_view_(addressof(cp_view)) { }
+    constexpr explicit _sentinel_impl(const zip_view& zview)
+        : end_(zview._visit([](auto view){ return ranges::end(view); })),
+          zview_(addressof(zview)) { }
 
     friend constexpr bool // Define _eq for friend accessing.
     operator==(const _iterator_t& iterator, const _sentinel_impl& sentinel) {
       return sentinel._eq(iterator);
     }
 
-    // Trace the previous iterator (the last element in the range)
-    // according to the given sentinel. This function would be enabled if and
-    // only if each subview is bidirectional.
     constexpr _iterator_t prev() const
     requires ext::variadic_bidirectional_ranges<Views...> {
       auto _visit_impl = // Template lambda expression.
         [&]<size_t... Ns>(index_sequence<Ns...>) {
-          return _iterator_t { *cp_view_, ranges::prev(get<Ns>(end_))... };
+          return _iterator_t { *zview_, ranges::prev(get<Ns>(end_))... };
         };
       return _visit_impl(make_index_sequence<sizeof...(Views)>());
     }
@@ -213,14 +192,11 @@ public:
           return ((get<Ns>(iterator.current_iter_)
             == get<Ns>(end_)) || ...);
         };
-      // This equality checking is tricky. As we know, any empty sub-range
-      // will induce an empty cartesian product range, so any sub-iterator
-      // equal to according ending directly induces an ending iterator.
       return _visit_impl(make_index_sequence<sizeof...(Views)>());
     }
 
     tuple<sentinel_t<Views>...> end_;
-    const cartesian_product_view* cp_view_ { nullptr };
+    const zip_view* zview_ { nullptr };
   };
 
   // Type alias for normal and const sentinels.
@@ -231,11 +207,11 @@ public:
   struct _reverse_sentinel {
     _reverse_sentinel() = default;
     constexpr explicit _reverse_sentinel(
-      const cartesian_product_view& cp_view)
-        : rend_(cp_view._visit([](auto view){
+      const zip_view& zview)
+        : rend_(zview._visit([](auto view){
             return ranges::prev(ranges::begin(view));
           })),
-          cp_view_(addressof(cp_view)) { }
+          zview_(addressof(zview)) { }
 
     friend constexpr bool // Define _eq for friend accessing.
     operator==(const _reverse_iterator& iterator,
@@ -247,7 +223,7 @@ public:
     requires ext::variadic_bidirectional_ranges<Views...> {
       auto _visit_impl = // Template lambda expression.
         [&]<size_t... Ns>(index_sequence<Ns...>) {
-          return _iterator { *cp_view_, ranges::prev(get<Ns>(rend_))... };
+          return _iterator { *zview_, ranges::prev(get<Ns>(rend_))... };
         };
       return _visit_impl(make_index_sequence<sizeof...(Views)>());
     }
@@ -264,7 +240,7 @@ public:
     }
 
     tuple<sentinel_t<Views>...> rend_;
-    const cartesian_product_view* cp_view_ { nullptr };
+    const zip_view* zview_ { nullptr };
   };
 
   constexpr _iterator begin() {
@@ -344,18 +320,17 @@ private:
 // program-defined types which model borrowed_range.
 template<input_range... Views>
 inline constexpr bool
-enable_borrowed_range<cartesian_product_view<Views...> > = true;
+enable_borrowed_range<zip_view<Views...> > = true;
 
 // Template deduction guide.
 template<input_range... Ranges>
-cartesian_product_view(Ranges&&...)
-    -> cartesian_product_view<views::all_t<Ranges>...>;
+zip_view(Ranges&&...) -> zip_view<views::all_t<Ranges>...>;
 
 namespace views {
 
-inline constexpr __adaptor::_RangeAdaptor cartesian_product
+inline constexpr __adaptor::_RangeAdaptor zip
   = []<viewable_range... Ranges>(Ranges&&... ranges) {
-    return cartesian_product_view { forward<Ranges>(ranges)... };
+    return zip_view { forward<Ranges>(ranges)... };
   };
 
 } // namespace views
@@ -364,4 +339,4 @@ inline constexpr __adaptor::_RangeAdaptor cartesian_product
 
 } // namespace std
 
-#endif // FIOCCA_VIEW_CARTESIAN_PRODUCT_HPP_
+#endif // FIOCCA_VIEW_ZIP_HPP_

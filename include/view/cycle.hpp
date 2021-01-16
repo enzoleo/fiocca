@@ -128,7 +128,7 @@ public:
   using _sentinel = _sentinel_impl<_iterator>;
   using _const_sentinel = _sentinel_impl<_const_iterator>;
 
-  constexpr auto begin() {
+  constexpr _iterator begin() {
     return _iterator { *this, ranges::begin(view_) };
   }
   constexpr auto end() {
@@ -138,7 +138,7 @@ public:
       return _sentinel { *this };
   }
 
-  constexpr auto cbegin() const {
+  constexpr _const_iterator cbegin() const {
     return _const_iterator { *this, ranges::cbegin(view_) };
   }
   constexpr auto cend() const {

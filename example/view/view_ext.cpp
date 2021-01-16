@@ -54,5 +54,16 @@ auto main() -> int {
     // std::cout << x << " " << y << std::endl;
   }
 
+  // Construct a zip of two views.
+  auto zip_view = std::views::zip(
+    arr1 | std::views::all | std::views::cycle,
+    vec2 | std::views::all | std::views::cycle);
+
+  for (auto&& [x, y]: zip_view | std::views::take(30)) {
+    (void) x; (void) y;
+    // Uncomment the following line to print values on the screen.
+    // std::cout << x << y << "\n";
+  }
+
   return 0;
 }

@@ -3,5 +3,6 @@
 
 #include "cartesian_product.hpp"
 #include "cycle.hpp"
+#include "zip.hpp"
 
 #endif // FIOCCA_VIEW_VIEWS_HPP_
