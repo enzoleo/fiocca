@@ -2,6 +2,7 @@
 #include <array>
 #include <vector>
 #include "view/views.hpp"
+using namespace std::views;
 
 auto main() -> int {
   // The initialized STL containers.
@@ -9,11 +10,8 @@ auto main() -> int {
   std::vector vec2 { 'w', 'x', 'y', 'z' };
 
   // Construct a cartesian_product of two views.
-  auto cp_view = std::views::cartesian_product(
-    arr1 | std::views::all,
-    vec2 | std::views::all);
-
-  for (const auto& [x, y]: cp_view | std::views::reverse) {
+  auto cp_view = cartesian_product(arr1 | all, vec2 | all);
+  for (const auto& [x, y]: cp_view | reverse) {
     (void) x; (void) y;
     // Uncomment the following line to print values on the screen.
     // std::cout << x << y << "\n";
@@ -28,7 +26,7 @@ auto main() -> int {
   //     (3) auto&& [x, y] : cp_view { }
   // The above three structured bindings perform in different ways. Pay
   // attention to the inner type, it can be reference even if in (1).
-  for (auto [x, y] : cp_view | std::views::take(15)) {
+  for (auto [x, y] : cp_view | take(15)) {
     // The following line is allowed! The tuple element type is reference.
     // x = 'x';
     (void) x; (void) y;
@@ -47,7 +45,7 @@ auto main() -> int {
     // std::get<0>(*it) = 'x';
   }
 
-  for (auto [x, y] : cp_view | std::views::cycle | std::views::take(30)) {
+  for (auto [x, y] : cp_view | cycle | take(30)) {
     (void) x; (void) y;
     // Uncomment the following line to print the cartesian product values
     // defined above in a cycle without an end.
@@ -55,11 +53,11 @@ auto main() -> int {
   }
 
   // Construct a zip of two views.
-  auto zip_view = std::views::zip(
-    arr1 | std::views::all | std::views::cycle,
-    vec2 | std::views::all | std::views::cycle);
+  auto zip_view = cartesian_product(
+    arr1 | all | cycle,
+    vec2 | all | cycle);
 
-  for (auto&& [x, y]: zip_view | std::views::take(30)) {
+  for (auto&& [x, y]: zip_view | take(30) | reverse) {
     (void) x; (void) y;
     // Uncomment the following line to print values on the screen.
     // std::cout << x << y << "\n";

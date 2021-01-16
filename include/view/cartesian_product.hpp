@@ -54,8 +54,8 @@ public:
     template<size_t index>
     constexpr void _increment_impl() {
       constexpr auto N = index - 1;
-      auto& it = get<N>(current_iter_);
-      if (auto view = get<N>(cp_view_->views_);
+      auto& view = get<N>(const_cast<cp_view_t*>(cp_view_)->views_);
+      if (auto& it = get<N>(current_iter_);
           ++it == ranges::end(view)) {
         if constexpr (N == 0) return;
         else {
@@ -68,11 +68,12 @@ public:
     template<size_t index>
     constexpr void _decrement_impl() {
       constexpr auto N = index - 1;
+      auto& view = get<N>(const_cast<cp_view_t*>(cp_view_)->views_);
       if (auto& it = get<N>(current_iter_);
-          --it == ext::head(get<N>(cp_view_->views_))) {
+          --it == ext::head(view)) {
         if constexpr (N == 0) return;
         else {
-          it = ext::back(get<N>(cp_view_->views_));
+          it = ext::back(view);
           _decrement_impl<N>();
         }
       } else return;
