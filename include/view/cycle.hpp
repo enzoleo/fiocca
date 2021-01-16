@@ -33,12 +33,13 @@ public:
     template<typename Iterator>
     constexpr _iterator_base(const cycle_view& cyc_view, Iterator&& iter)
         : current_iter_ { forward<Iterator>(iter) },
-          cyc_view_(addressof(cyc_view)) {  }
+          cyc_view_(addressof(cyc_view)), ncyc_(0) {  }
 
     friend constexpr bool operator==(
       const _iterator_base& lhs, const _iterator_base& rhs)
     requires equality_comparable<views_iter_t> {
-      return lhs.current_iter_ == rhs.current_iter_;
+      return (lhs.current_iter_ == rhs.current_iter_) &&
+             (lhs.ncyc_ == rhs.ncyc_);
     }
 
   protected:
@@ -46,16 +47,22 @@ public:
     template<typename _iterator_t> friend struct _sentinel_impl;
 
     constexpr void _increment_impl() {
+      ++ncyc_; // Increase the cycle number.
       if (auto& it = current_iter_; ++it == ranges::end(cyc_view_->view_))
         it = ranges::begin(cyc_view_->view_);
     }
     constexpr void _decrement_impl() {
+      --ncyc_; // Decrease the cycle number.
       if (auto& it = current_iter_; --it == ext::head(cyc_view_->view_))
         it = ext::back(cyc_view_->view_);
     }
 
     views_iter_t current_iter_ { };
     const cycle_view* cyc_view_ { nullptr };
+
+    // Iterators can locate at different cycles, so this member is
+    // quite helpful to determine the equality of two iterators.
+    std::intmax_t ncyc_ { 0 };
   };
 
   template<typename deref_t>
@@ -115,8 +122,7 @@ public:
 
   private:
     constexpr bool _eq(const _iterator_t& iterator) const {
-      // Check whether a given iterator arrives at the ending.
-      return iterator.current_iter_ == end_;
+      return false;
     }
 
     sentinel_t<View> end_;

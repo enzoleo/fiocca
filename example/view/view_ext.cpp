@@ -53,7 +53,7 @@ auto main() -> int {
   }
 
   // Construct a zip of two views.
-  auto zip_view = cartesian_product(
+  auto zip_view = zip(
     arr1 | all | cycle,
     vec2 | all | cycle);
 
