@@ -109,8 +109,6 @@ public:
           cyc_view_(addressof(cyc_view)) { }
 
     // Trace the previous iterator (the last element in the range)
-    // according to the given sentinel. This function would be enabled if and
-    // only if each subview is bidirectional.
     constexpr _iterator_t prev() const
     requires bidirectional_range<View> {
       return _iterator_t { *cyc_view_, std::ext::prev(end_) };

@@ -22,9 +22,12 @@ public:
   struct _iterator_base {
     using cp_view_t = cartesian_product_view;
     using views_iter_t = tuple<iterator_t<Views>...>;
-    using deref_t = tuple<decltype(*declval<iterator_t<Views> >())...>;
-    using const_deref_t = tuple<
-      ext::const_trait_t<decltype(*declval<iterator_t<Views> >())>...>;
+    template<typename View>
+    using deref_value_t = decltype(*declval<iterator_t<View> >());
+
+    // Type aliases for derefence tuple types.
+    using deref_t = tuple<deref_value_t<Views>...>;
+    using const_deref_t = tuple<ext::const_trait_t<deref_value_t<Views> >...>;
 
     // Type aliases for iterators. They are essential to the basic
     // iterator actions and related functions.
