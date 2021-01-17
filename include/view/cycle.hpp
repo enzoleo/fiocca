@@ -101,16 +101,12 @@ public:
   using _const_iterator = _iterator_impl<typename _iterator_base::const_deref_t>;
 
   template<typename _iterator_t>
-  struct _sentinel_impl {
+  struct _sentinel_impl : unreachable_sentinel_t {
     _sentinel_impl() = default;
     constexpr explicit _sentinel_impl(const cycle_view& cyc_view)
-        : end_(ranges::end(cyc_view.view_)),
+        : unreachable_sentinel_t(),
+          end_(ranges::end(cyc_view.view_)),
           cyc_view_(addressof(cyc_view)) { }
-
-    friend constexpr bool // Define _eq for friend accessing.
-    operator==(const _iterator_t& iterator, const _sentinel_impl& sentinel) {
-      return sentinel._eq(iterator);
-    }
 
     // Trace the previous iterator (the last element in the range)
     // according to the given sentinel. This function would be enabled if and
@@ -119,12 +115,7 @@ public:
     requires bidirectional_range<View> {
       return _iterator_t { *cyc_view_, std::ext::prev(end_) };
     }
-
   private:
-    constexpr bool _eq(const _iterator_t& iterator) const {
-      return false;
-    }
-
     sentinel_t<View> end_;
     const cycle_view* cyc_view_ { nullptr };
   };
