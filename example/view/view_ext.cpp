@@ -22,7 +22,7 @@ auto main() -> int {
   // non-reference type, but the inner element types always prefer
   // references.
   //     (1) auto   [x, y] : cp_view { }
-  //     (2) auto&  [x, y] : cp_view { }
+  //     (2) auto&  [x, y] : cp_view { } // Probably not work!
   //     (3) auto&& [x, y] : cp_view { }
   // The above three structured bindings perform in different ways. Pay
   // attention to the inner type, it can be reference even if in (1).

@@ -163,19 +163,8 @@ public:
       auto tmp = *this; --*this; return tmp;
     }
 
-    // Note the dereference does not return the reference to the
-    // element previous to current, unlike normal reverse iterators.
-    // We adopt this implementation for convenient comparison to the
-    // sentinel type.
-    constexpr auto operator*() { return *current_; }
-
-    // Return a copy of the forward iterator base. Note that this
-    // base method returns the reference to the element next to the
-    // current iterator, remaining the semantics of other normal
-    // reverse iterators.
-    constexpr auto base() const noexcept {
-      auto tmp = current_; return *++tmp;
-    }
+    constexpr auto operator*() { auto tmp = current_; return *--tmp; }
+    constexpr auto base() const noexcept { return current_; }
 
   protected:
     friend cartesian_product_view;
@@ -236,9 +225,7 @@ public:
     _reverse_sentinel() = default;
     constexpr explicit _reverse_sentinel(
       const cartesian_product_view& cp_view)
-        : rend_(cp_view._visit([](auto view){
-            return ranges::prev(ranges::begin(view));
-          })),
+        : rend_(cp_view._visit([](auto view){ return ranges::begin(view); })),
           cp_view_(addressof(cp_view)) { }
 
     friend constexpr bool // Define _eq for friend accessing.
@@ -262,7 +249,7 @@ public:
       auto _visit_impl = // Template lambda expression.
         [&]<size_t... Ns>(index_sequence<Ns...>) {
           return ((get<Ns>(iterator.current_.current_iter_)
-            == get<Ns>(rend_)) || ...);
+            == get<Ns>(rend_)) && ...);
         };
       return _visit_impl(make_index_sequence<sizeof...(Views)>());
     }

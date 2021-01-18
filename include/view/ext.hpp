@@ -2,6 +2,7 @@
 #define FIOCCA_VIEW_EXT_HPP_
 
 #include <ranges>
+#include <algorithm>
 
 namespace std {
 
@@ -60,6 +61,56 @@ struct const_trait<T&> {
 
 template<typename T>
 using const_trait_t = typename const_trait<T>::type;
+
+namespace detail {
+
+template<typename Integer, typename View>
+requires integral<Integer>
+constexpr auto min_size_impl(Integer base, View&& view) {
+  if constexpr (sized_range<View>) {
+    if constexpr (unsigned_integral<Integer>)
+      return std::ranges::min(base, std::ranges::size(view));
+    else
+      return std::ranges::min(base, std::ranges::ssize(view));
+  } else return base;
+}
+
+template<typename Integer, typename Head, typename... Views>
+requires integral<Integer>
+constexpr auto min_size_impl(Integer base, Head&& head, Views&&... views) {
+  if constexpr (sized_range<Head>)
+    if constexpr (unsigned_integral<Integer>)
+      return min_size_impl( // Recursion based approach.
+        std::ranges::min(base, std::ranges::size(forward<Head>(head))),
+        forward<Views>(views)...);
+    else
+      return min_size_impl( // Recursion based approach.
+        std::ranges::min(base, std::ranges::ssize(forward<Head>(head))),
+        forward<Views>(views)...);
+  else // Skip the infinite range (without size attribute).
+    return min_size_impl(base, forward<Views>(views)...);
+}
+
+} // namespace detail
+
+template<typename Head, typename... Views>
+requires (sized_range<Head> || (sized_range<Views> || ...))
+constexpr auto min_size(Head&& head, Views&&... views) {
+  if constexpr (sized_range<Head>)
+    return detail::min_size_impl(
+      std::ranges::size(forward<Head>(head)),
+      forward<Views>(views)...);
+  else return min_size(forward<Views>(views)...);
+}
+template<typename Head, typename... Views>
+requires (sized_range<Head> || (sized_range<Views> || ...))
+constexpr auto min_ssize(Head&& head, Views&&... views) {
+  if constexpr (sized_range<Head>)
+    return detail::min_size_impl(
+      std::ranges::ssize(forward<Head>(head)),
+      forward<Views>(views)...);
+  else return min_ssize(forward<Views>(views)...);
+}
 
 } // namespace ext
 

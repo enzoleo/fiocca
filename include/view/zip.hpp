@@ -149,14 +149,8 @@ public:
       auto tmp = *this; --*this; return tmp;
     }
 
-    // Note the dereference does not return the reference to the
-    // element previous to current, unlike normal reverse iterators.
-    // We adopt this implementation for convenient comparison to the
-    // sentinel type.
-    constexpr auto operator*() { return *current_; }
-    constexpr auto base() const noexcept {
-      auto tmp = current_; return *++tmp;
-    }
+    constexpr auto operator*() { auto tmp = current_; return *--tmp; }
+    constexpr auto base() const noexcept { return current_; }
 
   protected:
     friend zip_view;
@@ -211,9 +205,7 @@ public:
     _reverse_sentinel() = default;
     constexpr explicit _reverse_sentinel(
       const zip_view& zview)
-        : rend_(zview._visit([](auto view){
-            return ranges::prev(ranges::begin(view));
-          })),
+        : rend_(zview._visit([](auto view){ return ranges::begin(view); })),
           zview_(addressof(zview)) { }
 
     friend constexpr bool // Define _eq for friend accessing.
@@ -230,7 +222,6 @@ public:
         };
       return _visit_impl(make_index_sequence<sizeof...(Views)>());
     }
-
   private:
     constexpr bool _eq(const _reverse_iterator& iterator) const {
       // Check whether a given reverse iterator arrives at the ending.
@@ -271,7 +262,7 @@ public:
   // Note that the accesses to rbegin and rend iterators do not
   // depend on whether the range is bidirectional or not.
   constexpr _reverse_iterator rbegin() {
-    return _reverse_iterator { ext::prev(end()) };
+    return _reverse_iterator { ++ext::prev(end()) };
   }
   constexpr _reverse_sentinel rend()
   requires ext::variadic_sized_ranges<Views...> {
@@ -279,18 +270,18 @@ public:
   }
 
   constexpr auto size() const
-  requires ext::variadic_sized_ranges<Views...> {
+  requires (sized_range<Views> || ...) {
     auto _visit_impl = // Template lambda expression.
       [&]<size_t... Ns>(index_sequence<Ns...>) {
-        return (std::ranges::size(get<Ns>(views_)) * ...);
+        return ext::min_size(get<Ns>(views_)...);
       };
     return _visit_impl(make_index_sequence<sizeof...(Views)>());
   }
   constexpr auto ssize() const
-  requires ext::variadic_sized_ranges<Views...> {
+  requires (sized_range<Views> || ...) {
     auto _visit_impl = // Template lambda expression.
       [&]<size_t... Ns>(index_sequence<Ns...>) {
-        return (std::ranges::ssize(get<Ns>(views_)) * ...);
+        return ext::min_ssize(get<Ns>(views_)...);
       };
     return _visit_impl(make_index_sequence<sizeof...(Views)>());
   }
