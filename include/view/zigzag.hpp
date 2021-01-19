@@ -40,7 +40,7 @@ public:
     // Type aliases for iterators. They are essential to the basic
     // iterator actions and related functions.
     using iterator_category =
-      typename iterator_traits<ZigView>::iterator_category;
+      typename iterator_traits<iterator_t<ZigView> >::iterator_category;
     using value_type = pair<range_value_t<ZigView>, range_value_t<ZagView> >;
     using difference_type = common_type_t<
       range_difference_t<ZigView>, range_difference_t<ZigView> >;
@@ -65,13 +65,28 @@ public:
     template<typename _iterator_t> friend struct _sentinel_impl;
 
     constexpr void _increment_impl() {
-      if (auto& it = get<1>(current_iter_);
-          turning_ && it == ranges::begin(zview_->zag_view_))
-        { ++get<0>(current_iter_); turning_ = !turning_; }
-      else if (auto& it = get<0>(current_iter_);
-          !turning_ && it == ranges::begin(zview_->zig_view_))
-        { ++get<1>(current_iter_); turning_ = !turning_; }
-      else _proceed();
+      auto& zig = const_cast<zigzag_view_t*>(zview_)->zig_view_;
+      auto& zag = const_cast<zigzag_view_t*>(zview_)->zag_view_;
+      
+      if (turning_) {
+        if (auto tmp = get<0>(current_iter_); ++tmp == ranges::end(zig))
+          // Now the zig iterator reaches its boundary, then tend to move
+          // the zag iterator to its next one.
+          { ++get<1>(current_iter_); turning_ = !turning_; }
+        else if (get<1>(current_iter_) == ranges::begin(zag))
+          // Now the zag iterator reaches its boundary.
+          { ++get<0>(current_iter_); turning_ = !turning_; }
+        else _proceed();
+      } else {
+        if (auto tmp = get<1>(current_iter_); ++tmp == ranges::end(zag))
+          // Now the zig iterator reaches its boundary, then tend to move
+          // the zag iterator to its next one.
+          { ++get<0>(current_iter_); turning_ = !turning_; }
+        else if (get<0>(current_iter_) == ranges::begin(zig))
+          // Now the zag iterator reaches its boundary.
+          { ++get<1>(current_iter_); turning_ = !turning_; }
+        else _proceed();
+      }
     }
 
     constexpr void _decrement_impl() {
@@ -125,6 +140,47 @@ public:
   // The template implementation classes aims at reducing duplication.
   using _iterator = _iterator_impl<typename _iterator_base::deref_t>;
   using _const_iterator = _iterator_impl<typename _iterator_base::const_deref_t>;
+
+  template<typename _iterator_t>
+  struct _sentinel_impl {
+    _sentinel_impl() = default;
+    constexpr explicit _sentinel_impl(const zigzag_view& zview)
+        : end_(invoke([](auto view) {
+            return pair { ranges::end(view.zig_view_), ranges::end(view.zag_view_) };
+          }, zview)),
+          zview_(addressof(zview)) { }
+
+    friend constexpr bool // Define _eq for friend accessing.
+    operator==(const _iterator_t& iterator, const _sentinel_impl& sentinel) {
+      return sentinel._eq(iterator);
+    }
+
+    // Trace the previous iterator (the last element in the range).
+    constexpr _iterator_t prev() const {
+      return _iterator_t { // Call prev function in ext namespace!
+        *zview_, ext::prev(get<0>(end_)), ext::prev(get<1>(end_)) };
+    }
+
+  private:
+    constexpr bool _eq(const _iterator_t& iterator) const {
+      // Check whether a given iterator arrives at the ending.
+      return (get<0>(iterator.current_iter_) == get<0>(end_)) ||
+             (get<1>(iterator.current_iter_) == get<1>(end_));
+    }
+
+    pair<sentinel_t<ZigView>, sentinel_t<ZagView> > end_;
+    const zigzag_view* zview_ { nullptr };
+  };
+
+  // Type alias for normal and const sentinels.
+  // The template implementation classes aims at reducing duplication.
+  using _sentinel = _sentinel_impl<_iterator>;
+  using _const_sentinel = _sentinel_impl<_const_iterator>;
+
+  constexpr _iterator begin() {
+    return _iterator { *this, ranges::begin(zig_view_), ranges::begin(zag_view_) };
+  }
+  constexpr _sentinel end() { return _sentinel { *this }; }
 
 private:
   ZigView zig_view_;

@@ -53,14 +53,17 @@ auto main() -> int {
   }
 
   // Construct a zip of two views.
-  auto zip_view = zip(
-    arr1 | all | cycle,
-    vec2 | all | cycle);
-
+  auto zip_view = zip(arr1 | all | cycle, vec2 | all | cycle);
   for (auto&& [x, y]: zip_view | take(30) | reverse) {
     (void) x; (void) y;
     // Uncomment the following line to print values on the screen.
     // std::cout << x << y << "\n";
+  }
+
+  auto zigzag_view = zigzag(iota(0, 3), iota(0));
+  for (auto&& [x, y]: zigzag_view | take(40)) {
+    // Uncomment the following line to print values on the screen.
+    // std::cout << x << " " << y << "\n";
   }
 
   return 0;

@@ -193,7 +193,7 @@ public:
     requires ext::variadic_bidirectional_ranges<Views...> {
       auto _visit_impl = // Template lambda expression.
         [&]<size_t... Ns>(index_sequence<Ns...>) {
-          return _iterator_t { *cp_view_, ranges::prev(get<Ns>(end_))... };
+          return _iterator_t { *cp_view_, ext::prev(get<Ns>(end_))... };
         };
       return _visit_impl(make_index_sequence<sizeof...(Views)>());
     }
@@ -238,7 +238,7 @@ public:
     requires ext::variadic_bidirectional_ranges<Views...> {
       auto _visit_impl = // Template lambda expression.
         [&]<size_t... Ns>(index_sequence<Ns...>) {
-          return _iterator { *cp_view_, ranges::prev(get<Ns>(rend_))... };
+          return _iterator { *cp_view_, ext::prev(get<Ns>(rend_))... };
         };
       return _visit_impl(make_index_sequence<sizeof...(Views)>());
     }
