@@ -57,11 +57,16 @@ public:
     template<size_t index>
     constexpr void _increment_impl() {
       constexpr auto N = index - 1;
-      auto& view = get<N>(const_cast<cp_view_t*>(cp_view_)->views_);
+      auto view = get<N>(cp_view_->views_);
       if (auto& it = get<N>(current_iter_);
           ++it == ranges::end(view)) {
+        // Now encounter the first sub-view of the cartesian product.
         if constexpr (N == 0) return;
         else {
+          // The logic of iterator increment process. Once an iterator
+          // reaches the ending, it will be reset to its beginning unless
+          // it is actually iterator of the first sub-view. This carry-like
+          // operation is performed recursively.
           it = ranges::begin(view);
           _increment_impl<N>();
         }
@@ -71,11 +76,16 @@ public:
     template<size_t index>
     constexpr void _decrement_impl() {
       constexpr auto N = index - 1;
-      auto& view = get<N>(const_cast<cp_view_t*>(cp_view_)->views_);
+      auto view = get<N>(cp_view_->views_);
       if (auto& it = get<N>(current_iter_);
           --it == ext::head(view)) {
+        // Now encounter the first sub-view of the cartesian product.
         if constexpr (N == 0) return;
         else {
+          // The fundamental logic of iterator decrement is similar to the
+          // increment. However, the reverse beginning and ending follows
+          // the representation of base forward iterator instead of the
+          // reverse ones. The reverse view will call this implementation.
           it = ext::back(view);
           _decrement_impl<N>();
         }

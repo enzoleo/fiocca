@@ -64,29 +64,24 @@ public:
     friend zigzag_view;
     template<typename _iterator_t> friend struct _sentinel_impl;
 
+    template<bool index>
+    constexpr auto _move_along_direction() {
+      auto view = pair { zview_->zig_view_, zview_->zag_view_ };
+      if (auto tmp = get<index>(current_iter_);
+          ++tmp == ranges::end(get<index>(view)))
+        // Now the zig iterator reaches its boundary, then tend to move
+        // the zag iterator to its next one.
+        { ++get<1 - index>(current_iter_); turning_ = !turning_; }
+      else if (auto tmp = get<1 - index>(current_iter_);
+          tmp == ranges::begin(get<1 - index>(view)))
+        // Now the zag iterator reaches its boundary.
+        { ++get<index>(current_iter_); turning_ = !turning_; }
+      else _proceed();
+    }
+
     constexpr void _increment_impl() {
-      auto& zig = const_cast<zigzag_view_t*>(zview_)->zig_view_;
-      auto& zag = const_cast<zigzag_view_t*>(zview_)->zag_view_;
-      
-      if (turning_) {
-        if (auto tmp = get<0>(current_iter_); ++tmp == ranges::end(zig))
-          // Now the zig iterator reaches its boundary, then tend to move
-          // the zag iterator to its next one.
-          { ++get<1>(current_iter_); turning_ = !turning_; }
-        else if (get<1>(current_iter_) == ranges::begin(zag))
-          // Now the zag iterator reaches its boundary.
-          { ++get<0>(current_iter_); turning_ = !turning_; }
-        else _proceed();
-      } else {
-        if (auto tmp = get<1>(current_iter_); ++tmp == ranges::end(zag))
-          // Now the zig iterator reaches its boundary, then tend to move
-          // the zag iterator to its next one.
-          { ++get<0>(current_iter_); turning_ = !turning_; }
-        else if (get<0>(current_iter_) == ranges::begin(zig))
-          // Now the zag iterator reaches its boundary.
-          { ++get<1>(current_iter_); turning_ = !turning_; }
-        else _proceed();
-      }
+      if (turning_) _move_along_direction<0>();
+      else          _move_along_direction<1>();
     }
 
     constexpr void _decrement_impl() {
@@ -181,6 +176,11 @@ public:
     return _iterator { *this, ranges::begin(zig_view_), ranges::begin(zag_view_) };
   }
   constexpr _sentinel end() { return _sentinel { *this }; }
+
+  constexpr _const_iterator cbegin() {
+    return _iterator { *this, ranges::cbegin(zig_view_), ranges::cbegin(zag_view_) };
+  }
+  constexpr _const_sentinel cend() { return _const_sentinel { *this }; }
 
 private:
   ZigView zig_view_;
