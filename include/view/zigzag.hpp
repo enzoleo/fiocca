@@ -8,7 +8,13 @@ namespace std {
 namespace ranges {
 
 template<typename ZigView, typename ZagView>
-requires (view<ZigView> && view<ZagView>) 
+requires ( // Zigzag view has to contain bidirectional ranges.
+  view<ZigView> && bidirectional_range<ZigView> &&
+  view<ZagView> && bidirectional_range<ZagView>
+  )
+  // Exactly two bidirectional ranges will be included into zigzag view, as
+  // one of iterators increases while the other decreases. Besides of that,
+  // naturally any zigzag view is reversible.
 class zigzag_view {
 public:
   zigzag_view() = default;
@@ -34,7 +40,7 @@ public:
     // Type aliases for iterators. They are essential to the basic
     // iterator actions and related functions.
     using iterator_category =
-        typename iterator_traits<ZigView>::iterator_category;
+      typename iterator_traits<ZigView>::iterator_category;
     using value_type = pair<range_value_t<ZigView>, range_value_t<ZagView> >;
     using difference_type = common_type_t<
       range_difference_t<ZigView>, range_difference_t<ZigView> >;
@@ -45,7 +51,7 @@ public:
     constexpr _iterator_base( // Construct from two iterators.
         const zigzag_view& zview, ZigIter&& it1, ZagIter&& it2)
         : current_iter_ { forward<ZigIter>(it1), forward<ZagIter>(it2) },
-          zview_(addressof(zview)) {  }
+          zview_(addressof(zview)), turning_(true) {  }
 
     friend constexpr bool operator==(
       const _iterator_base& lhs, const _iterator_base& rhs)
@@ -59,15 +65,27 @@ public:
     template<typename _iterator_t> friend struct _sentinel_impl;
 
     constexpr void _increment_impl() {
-      // TODO: implement increment.
+      if (auto& it = get<1>(current_iter_);
+          turning_ && it == ranges::begin(zview_->zag_view_))
+        { ++get<0>(current_iter_); turning_ = !turning_; }
+      else if (auto& it = get<0>(current_iter_);
+          !turning_ && it == ranges::begin(zview_->zig_view_))
+        { ++get<1>(current_iter_); turning_ = !turning_; }
+      else _proceed();
     }
 
     constexpr void _decrement_impl() {
       // TODO: implement decrement.
     }
 
+    constexpr void _proceed() {
+      if (turning_) { ++get<0>(current_iter_); --get<1>(current_iter_); }
+      else          { --get<0>(current_iter_); ++get<1>(current_iter_); }
+    }
+
     views_iter_t current_iter_ { };
     const zigzag_view* zview_ { nullptr };
+    bool turning_ { true };
   };
 
   template<typename deref_t>
@@ -82,25 +100,23 @@ public:
     // Note the operator* overloading has to be const to fit the
     // adaptors. The range-based for loop never calls const version.
     constexpr auto operator*() const {
-      // TODO: implement dereference.
+      return deref_t { // Dereference pairs (perfers reference).
+        *get<0>(this->current_iter_), *get<1>(this->current_iter_) };
     }
 
     constexpr _iterator_impl& operator++() {
       this->_increment_impl();
       return *this;
     }
-    constexpr _iterator_impl operator++(int)
-    requires (forward_range<ZigView> && forward_range<ZagView>) {
+    constexpr _iterator_impl operator++(int) {
       auto tmp = *this; ++*this; return tmp;
     }
 
-    constexpr _iterator_impl& operator--()
-    requires (bidirectional_range<ZigView> && bidirectional_range<ZagView>) {
+    constexpr _iterator_impl& operator--() {
       this->_decrement_impl();
       return *this;
     }
-    constexpr _iterator_impl operator--(int)
-    requires (bidirectional_range<ZigView> && bidirectional_range<ZagView>) {
+    constexpr _iterator_impl operator--(int) {
       auto tmp = *this; --*this; return tmp;
     }
   };
