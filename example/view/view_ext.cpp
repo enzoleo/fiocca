@@ -61,7 +61,7 @@ auto main() -> int {
   }
 
   auto zigzag_view = zigzag(iota(0, 3), iota(0));
-  for (auto&& [x, y]: zigzag_view | take(40)) {
+  for (auto&& [x, y]: zigzag_view | take(40) | reverse) {
     // Uncomment the following line to print values on the screen.
     // std::cout << x << " " << y << "\n";
   }

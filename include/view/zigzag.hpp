@@ -64,8 +64,18 @@ public:
     friend zigzag_view;
     template<typename _iterator_t> friend struct _sentinel_impl;
 
+    constexpr void _increment_impl() {
+      if (turning_) _move_along_dir_forward<0>();
+      else          _move_along_dir_forward<1>();
+    }
+
+    constexpr void _decrement_impl() {
+      if (turning_) _move_along_dir_reverse<1>();
+      else          _move_along_dir_reverse<0>();
+    }
+
     template<bool index>
-    constexpr auto _move_along_direction() {
+    constexpr auto _move_along_dir_forward() {
       auto view = pair { zview_->zig_view_, zview_->zag_view_ };
       if (auto tmp = get<index>(current_iter_);
           ++tmp == ranges::end(get<index>(view)))
@@ -76,21 +86,31 @@ public:
           tmp == ranges::begin(get<1 - index>(view)))
         // Now the zag iterator reaches its boundary.
         { ++get<index>(current_iter_); turning_ = !turning_; }
-      else _proceed();
+      else _proceed<1>(); // Forward iteration.
     }
 
-    constexpr void _increment_impl() {
-      if (turning_) _move_along_direction<0>();
-      else          _move_along_direction<1>();
+    template<bool index>
+    constexpr auto _move_along_dir_reverse() {
+      auto view = pair { zview_->zig_view_, zview_->zag_view_ };
+      if (auto tmp = get<1 - index>(current_iter_);
+          tmp == ranges::begin(get<1 - index>(view)))
+        // Now the zag iterator reaches its boundary.
+        { --get<index>(current_iter_); turning_ = !turning_; }
+      else if (auto tmp = get<index>(current_iter_);
+          ++tmp == ranges::end(get<index>(view)))
+        // Now the zig iterator reaches its boundary.
+        { --get<1 - index>(current_iter_); turning_ = !turning_; }
+      else _proceed<0>(); // Backward iteration.
     }
 
-    constexpr void _decrement_impl() {
-      // TODO: implement decrement.
-    }
-
+    template<bool forward = true>
     constexpr void _proceed() {
-      if (turning_) { ++get<0>(current_iter_); --get<1>(current_iter_); }
-      else          { --get<0>(current_iter_); ++get<1>(current_iter_); }
+      // The variable determines the direction of our iterator.
+      // They should perform in different ways in forward and backward
+      // iterations (self increment and decrement).
+      bool dir = forward? turning_ : !turning_;
+      if (dir) { ++get<0>(current_iter_); --get<1>(current_iter_); }
+      else     { --get<0>(current_iter_); ++get<1>(current_iter_); }
     }
 
     views_iter_t current_iter_ { };
