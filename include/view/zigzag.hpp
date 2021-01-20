@@ -48,9 +48,10 @@ public:
     _iterator_base() = default;
     template<typename ZigIter, typename ZagIter>
     constexpr _iterator_base( // Construct from two iterators.
-        const zigzag_view& zview, ZigIter&& it1, ZagIter&& it2)
+        const zigzag_view& zview, ZigIter&& it1, ZagIter&& it2,
+        bool turning = true)
         : current_iter_ { forward<ZigIter>(it1), forward<ZagIter>(it2) },
-          zview_(addressof(zview)), turning_(true) {  }
+          zview_(addressof(zview)), turning_(turning) {  }
 
     friend constexpr bool operator==(
       const _iterator_base& lhs, const _iterator_base& rhs)
@@ -207,9 +208,12 @@ public:
     }
 
     // Trace the previous iterator (the last element in the range).
-    constexpr _iterator_t prev() const {
+    constexpr _iterator_t prev() const
+    requires (sized_range<ZigView> && sized_range<ZagView>) {
+      auto ts = ranges::size(zview_->zig_view_) + ranges::size(zview_->zag_view_);
       return _iterator_t { // Call prev function in ext namespace!
-        *zview_, ext::prev(get<0>(end_)), ext::prev(get<1>(end_)) };
+        *zview_, ext::prev(get<0>(end_)), ext::prev(get<1>(end_)),
+        (ts % 2)? false : true };
     }
 
   private:
@@ -271,14 +275,23 @@ public:
   }
   constexpr _const_sentinel cend() { return _const_sentinel { *this }; }
 
-  // Note that the accesses to rbegin and rend iterators do not
-  // depend on whether the range is bidirectional or not.
+  // The reverse begin is only allowed when the two sub-views are finite, or
+  // equivalently they are bounded.
   constexpr _reverse_iterator rbegin() {
     return _reverse_iterator { ++ext::prev(end()) };
   }
   constexpr _reverse_sentinel rend()
   requires (sized_range<ZigView> && sized_range<ZagView>) {
     return _reverse_sentinel { *this };
+  }
+
+  constexpr auto size() const
+  requires (sized_range<ZigView> && sized_range<ZagView>) {
+    return ranges::size(zig_view_) * ranges::size(zag_view_);
+  }
+  constexpr auto ssize() const
+  requires (sized_range<ZigView> && sized_range<ZagView>) {
+    return ranges::ssize(zig_view_) * ranges::ssize(zag_view_);
   }
   
 private:

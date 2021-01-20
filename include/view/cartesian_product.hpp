@@ -304,7 +304,7 @@ public:
   requires ext::variadic_sized_ranges<Views...> {
     auto _visit_impl = // Template lambda expression.
       [&]<size_t... Ns>(index_sequence<Ns...>) {
-        return (std::ranges::size(get<Ns>(views_)) * ...);
+        return (ranges::size(get<Ns>(views_)) * ...);
       };
     return _visit_impl(make_index_sequence<sizeof...(Views)>());
   }
@@ -312,7 +312,7 @@ public:
   requires ext::variadic_sized_ranges<Views...> {
     auto _visit_impl = // Template lambda expression.
       [&]<size_t... Ns>(index_sequence<Ns...>) {
-        return (std::ranges::ssize(get<Ns>(views_)) * ...);
+        return (ranges::ssize(get<Ns>(views_)) * ...);
       };
     return _visit_impl(make_index_sequence<sizeof...(Views)>());
   }
