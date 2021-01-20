@@ -26,7 +26,6 @@ public:
   struct _reverse_sentinel;
 
   struct _iterator_base {
-    using zigzag_view_t = zigzag_view;
     using views_iter_t = pair<iterator_t<ZigView>, iterator_t<ZagView> >;
     template<typename View>
     using deref_value_t = decltype(*declval<iterator_t<View> >());
@@ -156,6 +155,43 @@ public:
   using _iterator = _iterator_impl<typename _iterator_base::deref_t>;
   using _const_iterator = _iterator_impl<typename _iterator_base::const_deref_t>;
 
+  struct _reverse_iterator {
+    // Type aliases for iterators. They are essential to the basic
+    // iterator actions and related functions.
+    using iterator_category = _iterator::iterator_category;
+    using value_type = _iterator::value_type;
+    using difference_type = _iterator::difference_type;
+
+    // Default constructors.
+    _reverse_iterator() = default;
+    constexpr explicit _reverse_iterator(_iterator iter)
+        : current_(iter) { }
+    
+    constexpr _reverse_iterator& operator++() {
+      --current_; return *this;
+    }
+    constexpr _reverse_iterator operator++(int) {
+      auto tmp = *this; ++*this; return tmp;
+    }
+
+    constexpr _reverse_iterator& operator--() {
+      ++current_; return *this;
+    }
+    constexpr _iterator operator--(int) {
+      auto tmp = *this; --*this; return tmp;
+    }
+
+    constexpr auto operator*() { auto tmp = current_; return *--tmp; }
+    constexpr auto base() const noexcept { return current_; }
+
+  protected:
+    friend zigzag_view;
+    friend _reverse_sentinel;
+    
+    // The underlying iterator of which base() returns a copy.
+    _iterator current_;
+  };
+
   template<typename _iterator_t>
   struct _sentinel_impl {
     _sentinel_impl() = default;
@@ -192,6 +228,39 @@ public:
   using _sentinel = _sentinel_impl<_iterator>;
   using _const_sentinel = _sentinel_impl<_const_iterator>;
 
+  struct _reverse_sentinel {
+    _reverse_sentinel() = default;
+    constexpr explicit _reverse_sentinel(const zigzag_view& zview)
+        : rend_(invoke([](auto view) {
+            // Construct the reverse iterator with the specified base forward
+            // iterator. The base of reverse ending is the beginning iterator.
+            return pair { ranges::begin(view.zig_view_),
+                          ranges::begin(view.zag_view_) };
+          }, zview)),
+          zview_(addressof(zview)) { }
+
+    friend constexpr bool // Define _eq for friend accessing.
+    operator==(const _reverse_iterator& iterator,
+               const _reverse_sentinel& sentinel) {
+      return sentinel._eq(iterator);
+    }
+
+    constexpr _iterator prev() const {
+      return _iterator { // Call prev function in ext namespace!
+        *zview_, ext::prev(get<0>(rend_)), ext::prev(get<1>(rend_)) };
+    }
+
+  private:
+    constexpr bool _eq(const _reverse_iterator& iterator) const {
+      // Check whether a given iterator arrives at the ending.
+      return (get<0>(iterator.current_.current_iter_) == get<0>(rend_)) &&
+             (get<1>(iterator.current_.current_iter_) == get<1>(rend_));
+    }
+
+    pair<sentinel_t<ZigView>, sentinel_t<ZagView> >  rend_;
+    const zigzag_view* zview_ { nullptr };
+  };
+
   constexpr _iterator begin() {
     return _iterator { *this, ranges::begin(zig_view_), ranges::begin(zag_view_) };
   }
@@ -202,6 +271,16 @@ public:
   }
   constexpr _const_sentinel cend() { return _const_sentinel { *this }; }
 
+  // Note that the accesses to rbegin and rend iterators do not
+  // depend on whether the range is bidirectional or not.
+  constexpr _reverse_iterator rbegin() {
+    return _reverse_iterator { ++ext::prev(end()) };
+  }
+  constexpr _reverse_sentinel rend()
+  requires (sized_range<ZigView> && sized_range<ZagView>) {
+    return _reverse_sentinel { *this };
+  }
+  
 private:
   ZigView zig_view_;
   ZagView zag_view_;
