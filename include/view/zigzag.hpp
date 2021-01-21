@@ -133,6 +133,10 @@ public:
       return deref_t { // Dereference pairs (perfers reference).
         *get<0>(this->current_iter_), *get<1>(this->current_iter_) };
     }
+    constexpr auto operator->() const {
+      return make_shared<deref_t>( // Return pointer to dereferences.
+        *get<0>(this->current_iter_), *get<1>(this->current_iter_));
+    }
 
     constexpr _iterator_impl& operator++() {
       this->_increment_impl();
@@ -183,6 +187,7 @@ public:
     }
 
     constexpr auto operator*() { auto tmp = current_; return *--tmp; }
+    constexpr auto operator->() { auto tmp = current_; return --tmp; }
     constexpr auto base() const noexcept { return current_; }
 
   protected:

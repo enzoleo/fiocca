@@ -9,4 +9,3 @@ Some improvements are required.
 - The `prev` methods of all `reverse_iterator` classes.
 - The `cartesian_product_view` seems to have wrong implementation of `rbegin` method.
 - The `crbegin` and `crend` methods for const `reverse_iterator` access.
-- The `operator->` overloading.

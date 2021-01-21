@@ -3,6 +3,7 @@
 
 #include <ranges>
 #include <algorithm>
+#include <memory>
 
 namespace std {
 

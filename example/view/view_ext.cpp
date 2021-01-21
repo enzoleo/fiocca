@@ -67,8 +67,5 @@ auto main() -> int {
     // std::cout << x << " " << y << "\n";
   }
 
-  auto zg_view = zigzag(iota(0, 4), iota(0, 4));
-  std::cout << std::ranges::size(zg_view) << std::endl;
-
   return 0;
 }

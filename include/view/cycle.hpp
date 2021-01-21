@@ -77,6 +77,7 @@ public:
     // Note the operator* overloading has to be const to fit the
     // adaptors. The range-based for loop never calls const version.
     constexpr deref_t operator*() const { return *(this->current_iter_); }
+    constexpr auto operator->() const { return this->current_iter_; }
     constexpr _iterator_impl& operator++() {
       this->_increment_impl(); return *this;
     }

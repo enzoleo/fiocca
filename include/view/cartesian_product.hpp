@@ -115,6 +115,14 @@ public:
         }; // Return type deref_t!
       return _visit_impl(make_index_sequence<dim()>());
     }
+    constexpr auto operator->() const {
+      // Have to consider both reference and non-reference types.
+      auto _visit_impl =
+        [&]<size_t... Ns>(index_sequence<Ns...>) {
+          return make_shared<deref_t>(*get<Ns>(this->current_iter_)...);
+        }; // Return type deref_t!
+      return _visit_impl(make_index_sequence<dim()>());
+    }
 
     constexpr _iterator_impl& operator++() {
       this->template _increment_impl<sizeof...(Views)>();
@@ -174,6 +182,7 @@ public:
     }
 
     constexpr auto operator*() { auto tmp = current_; return *--tmp; }
+    constexpr auto operator->() { auto tmp = current_; return --tmp; }
     constexpr auto base() const noexcept { return current_; }
 
   protected:
