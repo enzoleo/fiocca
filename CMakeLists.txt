@@ -4,7 +4,7 @@ project(fiocca LANGUAGES CXX)
 # We use C++20 by defaults to test some interesting new features.
 # Anyway we still try to make compatibility to C++17.
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS "-Wall -O2 -fconcepts")
+set(CMAKE_CXX_FLAGS "-Wall -O2")
 
 set(FIOCCA_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 
