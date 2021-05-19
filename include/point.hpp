@@ -88,4 +88,4 @@ using Point2d = Point<double>;
 
 } // namespace fiocca
 
-#endif // FIOCCA_POINT_HPP
+#endif // FIOCCA_POINT_HPP_

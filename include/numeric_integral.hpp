@@ -122,8 +122,8 @@ template<class DataType, class Integrand>
 requires integrable<Integrand, DataType>
 auto romberg(Integrand&& integrand,
              DataType min, DataType max,
-             DataType accuracy = (DataType)1e-11,
-             size_t max_steps = 1e+2) {
+             DataType accuracy = static_cast<DataType>(1e-11),
+             size_t max_steps = 32) {
   // Buffers for initialization of romberg series.
   std::vector<DataType> pre_row(max_steps), cur_row(max_steps);
   DataType h = max - min;
