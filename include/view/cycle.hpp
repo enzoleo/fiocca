@@ -156,14 +156,18 @@ enable_borrowed_range<cycle_view<Views...> > = true;
 
 // Template deduction guide.
 template<input_range Range>
-cycle_view(Range) -> cycle_view<views::all_t<Range> >;
+cycle_view(Range&&) -> cycle_view<views::all_t<Range> >;
 
 namespace views {
 
-inline constexpr __adaptor::_RangeAdaptorClosure cycle
-  = []<viewable_range Range>(Range&& range) {
-    return cycle_view { forward<Range>(range) };
-  };
+struct _Cycle : __adaptor::_RangeAdaptorClosure {
+  template<viewable_range _Range>
+  constexpr auto operator()(_Range&& __r) const {
+    return cycle_view { forward<_Range>(__r) };
+  }
+};
+
+inline constexpr _Cycle cycle;
 
 } // namespace views
 
