@@ -45,6 +45,12 @@ auto main() -> int {
     // std::get<0>(*it) = 'x';
   }
 
+  // The explanations on cppreference.
+  // If an adaptor takes only one argument, it can also be called using the
+  // pipe operator: if C is a range adaptor object and R is a viewable_range,
+  // these two expressions are equivalent:
+  //     C(R)  and   R | C
+  // The custom adaptor should well-inherit from the base adaptor type.
   for (auto [x, y] : cp_view | cycle | take(30)) {
     (void) x; (void) y;
     // Uncomment the following line to print the cartesian product values

@@ -363,7 +363,7 @@ cartesian_product_view(Ranges&&...)
 
 namespace views {
 
-inline constexpr __adaptor::_RangeAdaptor cartesian_product
+inline constexpr auto cartesian_product
   = []<viewable_range... Ranges>(Ranges&&... ranges) {
     return cartesian_product_view { forward<Ranges>(ranges)... };
   };

@@ -76,41 +76,41 @@ constexpr auto min_size_impl(Integer base, View&& view) {
   } else return base;
 }
 
-template<typename Integer, typename Head, typename... Views>
+template<typename Integer, typename Head, typename... _Views>
 requires integral<Integer>
-constexpr auto min_size_impl(Integer base, Head&& head, Views&&... views) {
+constexpr auto min_size_impl(Integer base, Head&& head, _Views&&... views) {
   if constexpr (sized_range<Head>)
     if constexpr (unsigned_integral<Integer>)
       return min_size_impl( // Recursion based approach.
         std::ranges::min(base, std::ranges::size(forward<Head>(head))),
-        forward<Views>(views)...);
+        forward<_Views>(views)...);
     else
       return min_size_impl( // Recursion based approach.
         std::ranges::min(base, std::ranges::ssize(forward<Head>(head))),
-        forward<Views>(views)...);
+        forward<_Views>(views)...);
   else // Skip the infinite range (without size attribute).
-    return min_size_impl(base, forward<Views>(views)...);
+    return min_size_impl(base, forward<_Views>(views)...);
 }
 
 } // namespace detail
 
-template<typename Head, typename... Views>
-requires (sized_range<Head> || (sized_range<Views> || ...))
-constexpr auto min_size(Head&& head, Views&&... views) {
+template<typename Head, typename... _Views>
+requires (sized_range<Head> || (sized_range<_Views> || ...))
+constexpr auto min_size(Head&& head, _Views&&... views) {
   if constexpr (sized_range<Head>)
     return detail::min_size_impl(
       std::ranges::size(forward<Head>(head)),
-      forward<Views>(views)...);
-  else return min_size(forward<Views>(views)...);
+      forward<_Views>(views)...);
+  else return min_size(forward<_Views>(views)...);
 }
-template<typename Head, typename... Views>
-requires (sized_range<Head> || (sized_range<Views> || ...))
-constexpr auto min_ssize(Head&& head, Views&&... views) {
+template<typename Head, typename... _Views>
+requires (sized_range<Head> || (sized_range<_Views> || ...))
+constexpr auto min_ssize(Head&& head, _Views&&... views) {
   if constexpr (sized_range<Head>)
     return detail::min_size_impl(
       std::ranges::ssize(forward<Head>(head)),
-      forward<Views>(views)...);
-  else return min_ssize(forward<Views>(views)...);
+      forward<_Views>(views)...);
+  else return min_ssize(forward<_Views>(views)...);
 }
 
 } // namespace ext

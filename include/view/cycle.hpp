@@ -7,26 +7,26 @@ namespace std {
 
 namespace ranges {
 
-template<input_range View>
-class cycle_view : public view_interface<cycle_view<View> > {
+template<input_range _View>
+class cycle_view : public view_interface<cycle_view<_View> > {
 public:
   cycle_view() = default;
-  constexpr cycle_view(View&& view) : view_(forward<View>(view)) { }
+  constexpr cycle_view(_View&& view) : view_(forward<_View>(view)) { }
 
   template<typename _iterator_t> struct _sentinel_impl;
   struct _iterator_base {
     using cyc_view_t = cycle_view;
-    using views_iter_t = iterator_t<View>;
-    using deref_t = decltype(*declval<iterator_t<View> >());
+    using views_iter_t = iterator_t<_View>;
+    using deref_t = decltype(*declval<iterator_t<_View> >());
     using const_deref_t = ext::const_trait_t<
-      decltype(*declval<iterator_t<View> >())>;
+      decltype(*declval<iterator_t<_View> >())>;
 
     // Type aliases for iterators. They are essential to the basic
     // iterator actions and related functions.
     using iterator_category = typename iterator_traits<
-      iterator_t<View> >::iterator_category;
-    using value_type = range_value_t<View>;
-    using difference_type = range_difference_t<View>;
+      iterator_t<_View> >::iterator_category;
+    using value_type = range_value_t<_View>;
+    using difference_type = range_difference_t<_View>;
 
     // Default constructors.
     _iterator_base() = default;
@@ -82,16 +82,16 @@ public:
       this->_increment_impl(); return *this;
     }
     constexpr _iterator_impl operator++(int)
-    requires forward_range<View> {
+    requires forward_range<_View> {
       auto tmp = *this; ++*this; return tmp;
     }
 
     constexpr _iterator_impl& operator--()
-    requires bidirectional_range<View> {
+    requires bidirectional_range<_View> {
       this->_decrement_impl(); return *this;
     }
     constexpr _iterator_impl operator--(int)
-    requires bidirectional_range<View> {
+    requires bidirectional_range<_View> {
       auto tmp = *this; --*this; return tmp;
     }
   };
@@ -111,11 +111,11 @@ public:
 
     // Trace the previous iterator (the last element in the range)
     constexpr _iterator_t prev() const
-    requires bidirectional_range<View> {
+    requires bidirectional_range<_View> {
       return _iterator_t { *cyc_view_, std::ext::prev(end_) };
     }
   private:
-    sentinel_t<View> end_;
+    sentinel_t<_View> end_;
     const cycle_view* cyc_view_ { nullptr };
   };
 
@@ -128,7 +128,7 @@ public:
     return _iterator { *this, ranges::begin(view_) };
   }
   constexpr auto end() {
-    if constexpr (common_range<View>)
+    if constexpr (common_range<_View>)
       return _iterator { *this, ranges::end(view_) };
     else
       return _sentinel { *this };
@@ -138,25 +138,25 @@ public:
     return _const_iterator { *this, ranges::cbegin(view_) };
   }
   constexpr auto cend() const {
-    if constexpr (common_range<View>)
+    if constexpr (common_range<_View>)
       return _iterator { *this, ranges::cend(view_) };
     else
       return _const_sentinel { *this };
   }
 
 private:
-  View view_;
+  _View view_;
 };
 
 // Specialize enable_borrowed_range to true for cv-unqualified
 // program-defined types which model borrowed_range.
-template<input_range... Views>
+template<input_range... _Views>
 inline constexpr bool
-enable_borrowed_range<cycle_view<Views...> > = true;
+enable_borrowed_range<cycle_view<_Views...> > = true;
 
 // Template deduction guide.
-template<input_range Range>
-cycle_view(Range&&) -> cycle_view<views::all_t<Range> >;
+template<input_range _Range>
+cycle_view(_Range&&) -> cycle_view<views::all_t<_Range> >;
 
 namespace views {
 

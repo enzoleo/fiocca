@@ -7,34 +7,34 @@ namespace std {
 
 namespace ranges {
 
-template<typename ...Views>
-requires ext::variadic_views<Views...>
-class zip_view {
+template<typename ..._Views>
+requires ext::variadic_views<_Views...>
+class zip_view : public view_interface<zip_view<_Views...> > {
 public:
-  static constexpr auto dim() { return sizeof...(Views); }
+  static constexpr auto dim() { return sizeof...(_Views); }
   zip_view() = default;
-  constexpr explicit zip_view(Views&&... views)
-      : views_{ forward<Views>(views)... } {  }
+  constexpr explicit zip_view(_Views&&... __vs)
+      : views_{ forward<_Views>(__vs)... } {  }
   
   template<typename _iterator_t> struct _sentinel_impl;
   struct _reverse_sentinel;
 
   struct _iterator_base {
     using zip_view_t = zip_view;
-    using views_iter_t = tuple<iterator_t<Views>...>;
+    using views_iter_t = tuple<iterator_t<_Views>...>;
     template<typename View>
     using deref_value_t = decltype(*declval<iterator_t<View> >());
 
     // Type aliases for derefence tuple types.
-    using deref_t = tuple<deref_value_t<Views>...>;
-    using const_deref_t = tuple<ext::const_trait_t<deref_value_t<Views> >...>;
+    using deref_t = tuple<deref_value_t<_Views>...>;
+    using const_deref_t = tuple<ext::const_trait_t<deref_value_t<_Views> >...>;
 
     // Type aliases for iterators. They are essential to the basic
     // iterator actions and related functions.
     using iterator_category = typename iterator_traits<
       tuple_element_t<0, views_iter_t> >::iterator_category;
-    using value_type = tuple<range_value_t<Views>...>;
-    using difference_type = common_type_t<range_difference_t<Views>...>;
+    using value_type = tuple<range_value_t<_Views>...>;
+    using difference_type = common_type_t<range_difference_t<_Views>...>;
 
     // Default constructors.
     _iterator_base() = default;
@@ -46,7 +46,7 @@ public:
 
     friend constexpr bool operator==(
       const _iterator_base& lhs, const _iterator_base& rhs)
-    requires (equality_comparable<iterator_t<Views> > && ...) {
+    requires (equality_comparable<iterator_t<_Views> > && ...) {
       return lhs.current_iter_ == rhs.current_iter_;
     }
 
@@ -101,21 +101,21 @@ public:
     }
 
     constexpr _iterator_impl& operator++() {
-      this->template _increment_impl<sizeof...(Views)>();
+      this->template _increment_impl<sizeof...(_Views)>();
       return *this;
     }
     constexpr _iterator_impl operator++(int)
-    requires (forward_range<Views> && ...) {
+    requires (forward_range<_Views> && ...) {
       auto tmp = *this; ++*this; return tmp;
     }
 
     constexpr _iterator_impl& operator--()
-    requires ext::variadic_bidirectional_ranges<Views...> {
-      this->template _decrement_impl<sizeof...(Views)>();
+    requires ext::variadic_bidirectional_ranges<_Views...> {
+      this->template _decrement_impl<sizeof...(_Views)>();
       return *this;
     }
     constexpr _iterator_impl operator--(int)
-    requires ext::variadic_bidirectional_ranges<Views...> {
+    requires ext::variadic_bidirectional_ranges<_Views...> {
       auto tmp = *this; --*this; return tmp;
     }
   };
@@ -140,20 +140,20 @@ public:
         : current_(iter) { }
     
     constexpr _reverse_iterator& operator++()
-    requires ext::variadic_bidirectional_ranges<Views...> {
+    requires ext::variadic_bidirectional_ranges<_Views...> {
       --current_; return *this;
     }
     constexpr _reverse_iterator operator++(int)
-    requires ext::variadic_bidirectional_ranges<Views...> {
+    requires ext::variadic_bidirectional_ranges<_Views...> {
       auto tmp = *this; ++*this; return tmp;
     }
 
     constexpr _reverse_iterator& operator--()
-    requires ext::variadic_bidirectional_ranges<Views...> {
+    requires ext::variadic_bidirectional_ranges<_Views...> {
       ++current_; return *this;
     }
     constexpr _iterator operator--(int)
-    requires ext::variadic_bidirectional_ranges<Views...> {
+    requires ext::variadic_bidirectional_ranges<_Views...> {
       auto tmp = *this; --*this; return tmp;
     }
 
@@ -182,12 +182,12 @@ public:
     }
 
     constexpr _iterator_t prev() const
-    requires ext::variadic_bidirectional_ranges<Views...> {
+    requires ext::variadic_bidirectional_ranges<_Views...> {
       auto _visit_impl = // Template lambda expression.
         [&]<size_t... Ns>(index_sequence<Ns...>) {
           return _iterator_t { *zview_, ext::prev(get<Ns>(end_))... };
         };
-      return _visit_impl(make_index_sequence<sizeof...(Views)>());
+      return _visit_impl(make_index_sequence<sizeof...(_Views)>());
     }
 
   private:
@@ -198,10 +198,10 @@ public:
           return ((get<Ns>(iterator.current_iter_)
             == get<Ns>(end_)) || ...);
         };
-      return _visit_impl(make_index_sequence<sizeof...(Views)>());
+      return _visit_impl(make_index_sequence<sizeof...(_Views)>());
     }
 
-    tuple<sentinel_t<Views>...> end_;
+    tuple<sentinel_t<_Views>...> end_;
     const zip_view* zview_ { nullptr };
   };
 
@@ -224,12 +224,12 @@ public:
     }
 
     constexpr _iterator prev() const
-    requires ext::variadic_bidirectional_ranges<Views...> {
+    requires ext::variadic_bidirectional_ranges<_Views...> {
       auto _visit_impl = // Template lambda expression.
         [&]<size_t... Ns>(index_sequence<Ns...>) {
           return _iterator { *zview_, ext::prev(get<Ns>(rend_))... };
         };
-      return _visit_impl(make_index_sequence<sizeof...(Views)>());
+      return _visit_impl(make_index_sequence<sizeof...(_Views)>());
     }
   private:
     constexpr bool _eq(const _reverse_iterator& iterator) const {
@@ -239,10 +239,10 @@ public:
           return ((get<Ns>(iterator.current_.current_iter_)
             == get<Ns>(rend_)) || ...);
         };
-      return _visit_impl(make_index_sequence<sizeof...(Views)>());
+      return _visit_impl(make_index_sequence<sizeof...(_Views)>());
     }
 
-    tuple<sentinel_t<Views>...> rend_;
+    tuple<sentinel_t<_Views>...> rend_;
     const zip_view* zview_ { nullptr };
   };
 
@@ -251,7 +251,7 @@ public:
       [&]<size_t... Ns>(index_sequence<Ns...>) {
         return _iterator { *this, ranges::begin(get<Ns>(views_))... };
       };
-    return _visit_impl(make_index_sequence<sizeof...(Views)>());
+    return _visit_impl(make_index_sequence<sizeof...(_Views)>());
   }
   constexpr _sentinel end() {
     return _sentinel { *this };
@@ -262,7 +262,7 @@ public:
       [&]<size_t... Ns>(index_sequence<Ns...>) {
         return _const_iterator { *this, ranges::cbegin(get<Ns>(views_))... };
       };
-    return _visit_impl(make_index_sequence<sizeof...(Views)>());
+    return _visit_impl(make_index_sequence<sizeof...(_Views)>());
   }
   constexpr _const_sentinel cend() const {
     return _const_sentinel { *this };
@@ -274,25 +274,25 @@ public:
     return _reverse_iterator { ++ext::prev(end()) };
   }
   constexpr _reverse_sentinel rend()
-  requires ext::variadic_sized_ranges<Views...> {
+  requires ext::variadic_sized_ranges<_Views...> {
     return _reverse_sentinel { *this };
   }
 
   constexpr auto size() const
-  requires (sized_range<Views> || ...) {
+  requires (sized_range<_Views> || ...) {
     auto _visit_impl = // Template lambda expression.
       [&]<size_t... Ns>(index_sequence<Ns...>) {
         return ext::min_size(get<Ns>(views_)...);
       };
-    return _visit_impl(make_index_sequence<sizeof...(Views)>());
+    return _visit_impl(make_index_sequence<sizeof...(_Views)>());
   }
   constexpr auto ssize() const
-  requires (sized_range<Views> || ...) {
+  requires (sized_range<_Views> || ...) {
     auto _visit_impl = // Template lambda expression.
       [&]<size_t... Ns>(index_sequence<Ns...>) {
         return ext::min_ssize(get<Ns>(views_)...);
       };
-    return _visit_impl(make_index_sequence<sizeof...(Views)>());
+    return _visit_impl(make_index_sequence<sizeof...(_Views)>());
   }
 
 private:
@@ -316,14 +316,14 @@ private:
     return tuple_visit(forward<Invokable>(f), views_);
   }
 
-  tuple<Views...> views_;
+  tuple<_Views...> views_;
 };
 
 // Specialize enable_borrowed_range to true for cv-unqualified
 // program-defined types which model borrowed_range.
-template<input_range... Views>
+template<input_range... _Views>
 inline constexpr bool
-enable_borrowed_range<zip_view<Views...> > = true;
+enable_borrowed_range<zip_view<_Views...> > = true;
 
 // Template deduction guide.
 template<input_range... Ranges>
@@ -331,10 +331,14 @@ zip_view(Ranges&&...) -> zip_view<views::all_t<Ranges>...>;
 
 namespace views {
 
-inline constexpr __adaptor::_RangeAdaptor zip
-  = []<viewable_range... Ranges>(Ranges&&... ranges) {
-    return zip_view { forward<Ranges>(ranges)... };
-  };
+struct _Zip : __adaptor::_RangeAdaptor<_Zip> {
+  template<viewable_range... _Ranges>
+  constexpr auto operator()(_Ranges&&... __rs) const {
+    return zip_view { forward<_Ranges>(__rs)... };
+  }
+};
+
+inline constexpr _Zip zip;
 
 } // namespace views
 

@@ -7,42 +7,60 @@ namespace std {
 
 namespace ranges {
 
-template<typename ZigView, typename ZagView>
+template<typename _ZigView, typename _ZagView>
 requires ( // Zigzag view has to contain bidirectional ranges.
-  view<ZigView> && bidirectional_range<ZigView> &&
-  view<ZagView> && bidirectional_range<ZagView>
+  view<_ZigView> && bidirectional_range<_ZigView> &&
+  view<_ZagView> && bidirectional_range<_ZagView>
   )
   // Exactly two bidirectional ranges will be included into zigzag view, as
   // one of iterators increases while the other decreases. Besides of that,
   // naturally any zigzag view is reversible.
-class zigzag_view {
+class zigzag_view : public view_interface<zigzag_view<_ZigView, _ZagView> > {
 public:
   zigzag_view() = default;
-  constexpr explicit zigzag_view(ZigView&& zig_view, ZagView&& zag_view)
-      : zig_view_(forward<ZigView>(zig_view)),
-        zag_view_(forward<ZagView>(zag_view)) {  }
+  constexpr explicit zigzag_view(_ZigView&& zig_view, _ZagView&& zag_view)
+      : zig_view_(forward<_ZigView>(zig_view)),
+        zag_view_(forward<_ZagView>(zag_view)) {  }
   
   template<typename _iterator_t> struct _sentinel_impl;
   struct _reverse_sentinel;
 
   struct _iterator_base {
-    using views_iter_t = pair<iterator_t<ZigView>, iterator_t<ZagView> >;
+  private:
+    static auto _S_iter_concept() {
+      using iter_concept = common_type_t<
+        typename iterator_t<_ZigView>::iterator_concept,
+        typename iterator_t<_ZagView>::iterator_concept>;
+      if constexpr (is_same_v<iter_concept, std::random_access_iterator_tag>)
+        return random_access_iterator_tag{};
+      else if constexpr (is_same_v<iter_concept, std::bidirectional_iterator_tag>)
+        return bidirectional_iterator_tag{};
+      else if constexpr (is_same_v<iter_concept, std::forward_iterator_tag>)
+        return forward_iterator_tag{};
+      else
+        return input_iterator_tag{};
+    }
+
+  public:
+    using views_iter_t = pair<iterator_t<_ZigView>, iterator_t<_ZagView> >;
     template<typename View>
     using deref_value_t = decltype(*declval<iterator_t<View> >());
 
     // Type aliases for dereference types.
-    using deref_t = pair<deref_value_t<ZigView>, deref_value_t<ZagView> >;
+    using deref_t = pair<deref_value_t<_ZigView>, deref_value_t<_ZagView> >;
     using const_deref_t = pair<
-      ext::const_trait_t<deref_value_t<ZigView> >,
-      ext::const_trait_t<deref_value_t<ZagView> > >;
+      ext::const_trait_t<deref_value_t<_ZigView> >,
+      ext::const_trait_t<deref_value_t<_ZagView> > >;
+
+    using iterator_concept = decltype(_S_iter_concept());
+    using iterator_category =
+      typename iterator_traits<iterator_t<_ZigView> >::iterator_category;
 
     // Type aliases for iterators. They are essential to the basic
     // iterator actions and related functions.
-    using iterator_category =
-      typename iterator_traits<iterator_t<ZigView> >::iterator_category;
-    using value_type = pair<range_value_t<ZigView>, range_value_t<ZagView> >;
+    using value_type = pair<range_value_t<_ZigView>, range_value_t<_ZagView> >;
     using difference_type = common_type_t<
-      range_difference_t<ZigView>, range_difference_t<ZigView> >;
+      range_difference_t<_ZigView>, range_difference_t<_ZigView> >;
 
     // Default constructors.
     _iterator_base() = default;
@@ -55,8 +73,8 @@ public:
 
     friend constexpr bool operator==(
       const _iterator_base& lhs, const _iterator_base& rhs)
-    requires (equality_comparable<iterator_t<ZigView> > &&
-              equality_comparable<iterator_t<ZagView> >) {
+    requires (equality_comparable<iterator_t<_ZigView> > &&
+              equality_comparable<iterator_t<_ZagView> >) {
       return lhs.current_iter_ == rhs.current_iter_;
     }
 
@@ -214,7 +232,7 @@ public:
 
     // Trace the previous iterator (the last element in the range).
     constexpr _iterator_t prev() const
-    requires (sized_range<ZigView> && sized_range<ZagView>) {
+    requires (sized_range<_ZigView> && sized_range<_ZagView>) {
       auto ts = ranges::size(zview_->zig_view_) + ranges::size(zview_->zag_view_);
       return _iterator_t { // Call prev function in ext namespace!
         *zview_, ext::prev(get<0>(end_)), ext::prev(get<1>(end_)),
@@ -228,7 +246,7 @@ public:
              (get<1>(iterator.current_iter_) == get<1>(end_));
     }
 
-    pair<sentinel_t<ZigView>, sentinel_t<ZagView> > end_;
+    pair<sentinel_t<_ZigView>, sentinel_t<_ZagView> > end_;
     const zigzag_view* zview_ { nullptr };
   };
 
@@ -266,7 +284,7 @@ public:
              (get<1>(iterator.current_.current_iter_) == get<1>(rend_));
     }
 
-    pair<sentinel_t<ZigView>, sentinel_t<ZagView> >  rend_;
+    pair<sentinel_t<_ZigView>, sentinel_t<_ZagView> >  rend_;
     const zigzag_view* zview_ { nullptr };
   };
 
@@ -286,22 +304,22 @@ public:
     return _reverse_iterator { ++ext::prev(end()) };
   }
   constexpr _reverse_sentinel rend()
-  requires (sized_range<ZigView> && sized_range<ZagView>) {
+  requires (sized_range<_ZigView> && sized_range<_ZagView>) {
     return _reverse_sentinel { *this };
   }
 
   constexpr auto size() const
-  requires (sized_range<ZigView> && sized_range<ZagView>) {
+  requires (sized_range<_ZigView> && sized_range<_ZagView>) {
     return ranges::size(zig_view_) * ranges::size(zag_view_);
   }
   constexpr auto ssize() const
-  requires (sized_range<ZigView> && sized_range<ZagView>) {
+  requires (sized_range<_ZigView> && sized_range<_ZagView>) {
     return ranges::ssize(zig_view_) * ranges::ssize(zag_view_);
   }
   
 private:
-  ZigView zig_view_;
-  ZagView zag_view_;
+  _ZigView zig_view_;
+  _ZagView zag_view_;
 };
 
 // Specialize enable_borrowed_range to true for cv-unqualified
@@ -316,10 +334,14 @@ zigzag_view(Ranges&&...) -> zigzag_view<views::all_t<Ranges>...>;
 
 namespace views {
 
-inline constexpr __adaptor::_RangeAdaptor zigzag
-  = []<viewable_range... Ranges>(Ranges&&... ranges) {
-    return zigzag_view { forward<Ranges>(ranges)... };
-  };
+struct _Zigzag : __adaptor::_RangeAdaptor<_Zigzag> {
+  template<viewable_range... _Ranges>
+  constexpr auto operator()(_Ranges&&... __rs) const {
+    return zigzag_view { forward<_Ranges>(__rs)... };
+  }
+};
+
+inline constexpr _Zigzag zigzag;
 
 } // namespace views
 
