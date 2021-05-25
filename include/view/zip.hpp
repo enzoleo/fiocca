@@ -7,8 +7,7 @@ namespace std {
 
 namespace ranges {
 
-template<typename ..._Views>
-requires ext::variadic_views<_Views...>
+template<view ..._Views>
 class zip_view : public view_interface<zip_view<_Views...> > {
 public:
   static constexpr auto dim() { return sizeof...(_Views); }

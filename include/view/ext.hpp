@@ -12,8 +12,6 @@ namespace ranges {
 namespace ext {
 
 template<class... Ts>
-concept variadic_views = (view<Ts> && ...);
-template<class... Ts>
 concept variadic_sized_ranges = (sized_range<Ts> && ...);
 template<class... Ts>
 concept variadic_bidirectional_ranges = (bidirectional_range<Ts> && ...);

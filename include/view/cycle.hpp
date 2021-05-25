@@ -7,7 +7,7 @@ namespace std {
 
 namespace ranges {
 
-template<input_range _View>
+template<view _View>
 class cycle_view : public view_interface<cycle_view<_View> > {
 public:
   cycle_view() = default;

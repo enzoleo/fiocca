@@ -7,7 +7,7 @@ namespace std {
 
 namespace ranges {
 
-template<typename _ZigView, typename _ZagView>
+template<view _ZigView, view _ZagView>
 requires ( // Zigzag view has to contain bidirectional ranges.
   view<_ZigView> && bidirectional_range<_ZigView> &&
   view<_ZagView> && bidirectional_range<_ZagView>
@@ -324,9 +324,9 @@ private:
 
 // Specialize enable_borrowed_range to true for cv-unqualified
 // program-defined types which model borrowed_range.
-template<input_range... Views>
+template<input_range... _Views>
 inline constexpr bool
-enable_borrowed_range<zigzag_view<Views...> > = true;
+enable_borrowed_range<zigzag_view<_Views...> > = true;
 
 // Template deduction guide.
 template<input_range... Ranges>
