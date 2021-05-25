@@ -15,6 +15,18 @@ public:
 
   template<typename _iterator_t> struct _sentinel_impl;
   struct _iterator_base {
+  private:
+    static auto _S_iter_concept() {
+      if constexpr (random_access_range<_View>)
+        return random_access_iterator_tag{};
+      else if constexpr (bidirectional_range<_View>)
+        return bidirectional_iterator_tag{};
+      else if constexpr (forward_range<_View>)
+        return forward_iterator_tag{};
+      else
+        return input_iterator_tag{};
+    }
+  public:
     using cyc_view_t = cycle_view;
     using views_iter_t = iterator_t<_View>;
     using deref_t = decltype(*declval<iterator_t<_View> >());
@@ -23,6 +35,7 @@ public:
 
     // Type aliases for iterators. They are essential to the basic
     // iterator actions and related functions.
+    using iterator_concept = decltype(_S_iter_concept());
     using iterator_category = typename iterator_traits<
       iterator_t<_View> >::iterator_category;
     using value_type = range_value_t<_View>;
@@ -67,6 +80,7 @@ public:
 
   template<typename deref_t>
   struct _iterator_impl : public _iterator_base {
+    using iterator_concept = _iterator_base::iterator_concept;
     using iterator_category = _iterator_base::iterator_category;
     using value_type = _iterator_base::value_type;
     using difference_type = _iterator_base::difference_type;

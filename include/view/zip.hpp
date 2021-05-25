@@ -19,6 +19,18 @@ public:
   struct _reverse_sentinel;
 
   struct _iterator_base {
+  private:
+    static auto _S_iter_concept() {
+      if constexpr ((random_access_range<_Views> && ...))
+        return random_access_iterator_tag{};
+      else if constexpr ((bidirectional_range<_Views> && ...))
+        return bidirectional_iterator_tag{};
+      else if constexpr ((forward_range<_Views> && ...))
+        return forward_iterator_tag{};
+      else
+        return input_iterator_tag{};
+    }
+  public:
     using zip_view_t = zip_view;
     using views_iter_t = tuple<iterator_t<_Views>...>;
     template<typename View>
@@ -30,8 +42,9 @@ public:
 
     // Type aliases for iterators. They are essential to the basic
     // iterator actions and related functions.
-    using iterator_category = typename iterator_traits<
-      tuple_element_t<0, views_iter_t> >::iterator_category;
+    using iterator_concept = decltype(_S_iter_concept());
+    using iterator_category = common_type_t<
+      typename iterator_traits<iterator_t<_Views> >::iterator_category...>;
     using value_type = tuple<range_value_t<_Views>...>;
     using difference_type = common_type_t<range_difference_t<_Views>...>;
 
@@ -73,6 +86,7 @@ public:
 
   template<typename deref_t>
   struct _iterator_impl : public _iterator_base {
+    using iterator_concept = _iterator_base::iterator_concept;
     using iterator_category = _iterator_base::iterator_category;
     using value_type = _iterator_base::value_type;
     using difference_type = _iterator_base::difference_type;

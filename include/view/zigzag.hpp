@@ -15,9 +15,9 @@ requires (bidirectional_range<_ZigView> && bidirectional_range<_ZagView>)
 class zigzag_view : public view_interface<zigzag_view<_ZigView, _ZagView> > {
 public:
   zigzag_view() = default;
-  constexpr explicit zigzag_view(_ZigView&& zig_view, _ZagView&& zag_view)
-      : zig_view_(forward<_ZigView>(zig_view)),
-        zag_view_(forward<_ZagView>(zag_view)) {  }
+  constexpr explicit zigzag_view(_ZigView&& __zig, _ZagView&& __zag)
+      : zig_view_(forward<_ZigView>(__zig)),
+        zag_view_(forward<_ZagView>(__zag)) {  }
   
   template<typename _iterator_t> struct _sentinel_impl;
   struct _reverse_sentinel;
@@ -136,6 +136,7 @@ public:
 
   template<typename deref_t>
   struct _iterator_impl : public _iterator_base {
+    using iterator_concept = _iterator_base::iterator_concept;
     using iterator_category = _iterator_base::iterator_category;
     using value_type = _iterator_base::value_type;
     using difference_type = _iterator_base::difference_type;
