@@ -8,10 +8,7 @@ namespace std {
 namespace ranges {
 
 template<view _ZigView, view _ZagView>
-requires ( // Zigzag view has to contain bidirectional ranges.
-  view<_ZigView> && bidirectional_range<_ZigView> &&
-  view<_ZagView> && bidirectional_range<_ZagView>
-  )
+requires (bidirectional_range<_ZigView> && bidirectional_range<_ZagView>)
   // Exactly two bidirectional ranges will be included into zigzag view, as
   // one of iterators increases while the other decreases. Besides of that,
   // naturally any zigzag view is reversible.
@@ -43,8 +40,8 @@ public:
 
   public:
     using views_iter_t = pair<iterator_t<_ZigView>, iterator_t<_ZagView> >;
-    template<typename View>
-    using deref_value_t = decltype(*declval<iterator_t<View> >());
+    template<typename _View>
+    using deref_value_t = decltype(*declval<iterator_t<_View> >());
 
     // Type aliases for dereference types.
     using deref_t = pair<deref_value_t<_ZigView>, deref_value_t<_ZagView> >;
@@ -53,8 +50,9 @@ public:
       ext::const_trait_t<deref_value_t<_ZagView> > >;
 
     using iterator_concept = decltype(_S_iter_concept());
-    using iterator_category =
-      typename iterator_traits<iterator_t<_ZigView> >::iterator_category;
+    using iterator_category = common_type_t<
+      typename iterator_traits<iterator_t<_ZigView> >::iterator_category,
+      typename iterator_traits<iterator_t<_ZagView> >::iterator_category>;
 
     // Type aliases for iterators. They are essential to the basic
     // iterator actions and related functions.
@@ -324,20 +322,25 @@ private:
 
 // Specialize enable_borrowed_range to true for cv-unqualified
 // program-defined types which model borrowed_range.
-template<input_range... _Views>
+template<view _ZigView, view _ZagView>
 inline constexpr bool
-enable_borrowed_range<zigzag_view<_Views...> > = true;
+enable_borrowed_range<zigzag_view<_ZigView, _ZagView> > = true;
 
 // Template deduction guide.
-template<input_range... Ranges>
-zigzag_view(Ranges&&...) -> zigzag_view<views::all_t<Ranges>...>;
+template<input_range _ZigRange, input_range _ZagRange>
+zigzag_view(_ZigRange&&, _ZagRange&&)
+    -> zigzag_view<views::all_t<_ZigRange>, views::all_t<_ZagRange>>;
 
 namespace views {
 
 struct _Zigzag : __adaptor::_RangeAdaptor<_Zigzag> {
-  template<viewable_range... _Ranges>
-  constexpr auto operator()(_Ranges&&... __rs) const {
-    return zigzag_view { forward<_Ranges>(__rs)... };
+  template<viewable_range _ZigRange, viewable_range _ZagRange>
+  constexpr auto
+  operator()(_ZigRange&& __zig, _ZagRange&& __zag) const {
+    return zigzag_view {
+      forward<_ZigRange>(__zig),
+      forward<_ZagRange>(__zag)
+    };
   }
 };
 

@@ -150,9 +150,9 @@ private:
 
 // Specialize enable_borrowed_range to true for cv-unqualified
 // program-defined types which model borrowed_range.
-template<input_range... _Views>
+template<input_range _View>
 inline constexpr bool
-enable_borrowed_range<cycle_view<_Views...> > = true;
+enable_borrowed_range<cycle_view<_View> > = true;
 
 // Template deduction guide.
 template<input_range _Range>
